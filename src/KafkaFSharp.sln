@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "KafkaFSharp", "KafkaFSharp\KafkaFSharp.fsproj", "{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "KafkaFSharp.Tests", "KafkaFSharp.Tests\KafkaFSharp.Tests.fsproj", "{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
