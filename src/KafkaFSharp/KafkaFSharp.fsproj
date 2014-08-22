@@ -41,7 +41,10 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Library1.fs" />
+    <Compile Include="Crc32.fs" />
+    <Compile Include="Message.fs" />
+    <Compile Include="Codecs.fs" />
+    <Compile Include="Generator.fs" />
     <None Include="Script.fsx" />
   </ItemGroup>
   <PropertyGroup>

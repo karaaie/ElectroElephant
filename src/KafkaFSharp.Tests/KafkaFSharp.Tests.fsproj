@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>22efdb8b-89de-48ad-90ea-d1e78fa2bbd9</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>KafkaFSharp.Tests</RootNamespace>
     <AssemblyName>KafkaFSharp.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
@@ -32,6 +32,10 @@
     <DocumentationFile>bin\Release\KafkaFSharp.Tests.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Fuchu">
+      <HintPath>..\packages\Fuchu.0.4.0.0\lib\Fuchu.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=4.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
@@ -41,8 +45,16 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Library1.fs" />
     <None Include="Script.fsx" />
+    <None Include="packages.config" />
+    <Compile Include="progam.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KafkaFSharp\KafkaFSharp.fsproj">
+      <Name>KafkaFSharp</Name>
+      <Project>{431caea9-8d95-4a5e-a3bd-09ced1dc9f1e}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
