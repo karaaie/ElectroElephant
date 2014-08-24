@@ -49,6 +49,8 @@
     <None Include="packages.config" />
     <Compile Include="compression_tests.fs" />
     <Compile Include="decompression_tests.fs" />
+    <Compile Include="encoding_tests.fs" />
+    <Compile Include="message_tests.fs" />
     <Compile Include="progam.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -8,11 +8,15 @@ type Compression =
   | GZIP_COMPRESSION
 
 //return the identity of the compression algorithm
-let compression_id compression =
-
+let compression_to_id compression =
   match compression with
   | NO_COMPRESSION -> byte 0
   | GZIP_COMPRESSION -> byte 1
+
+let compression_from_id (b : byte) =
+  match b with
+  | 0uy -> NO_COMPRESSION
+  | 1uy -> GZIP_COMPRESSION
 
 let private compress_gzip (data : byte []) : byte [] = 
   use mem_stream = new MemoryStream()

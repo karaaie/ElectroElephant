@@ -1,4 +1,4 @@
-﻿module FsharpKafka.Crc32
+﻿module KafkaFSharp.Crc32
 
 module private Internal =
   let crcTable = 
@@ -7,7 +7,6 @@ module private Internal =
       let rec iter k acc =
           if k = 0 then acc else iter (k-1) (nextValue acc)
       [| 0u .. 255u |] |> Array.map (iter 8)
-
 
 /// Returns the CRC-32 value of 'name' as specified by RFC1952
 let crc32 (arr : byte []) =

@@ -1,32 +1,60 @@
-﻿module KafkaFsharp.Encoding
+﻿module KafkaFSharp.Encoding
 
 open KafkaFSharp.Model
+open KafkaFSharp.Compression
+open KafkaFSharp.Crc32
 
 open System
+
+// Compression Support uses '1' - https://cwiki.apache.org/confluence/display/KAFKA/Compression
+let MAGIC_CONST = 1
+
+// magic + compression + chksum
+let NO_LEN_HEADER_SIZE = MAGIC_CONST + 1 + 4
+
+let MESSAGE_LENGTH_BYTE_INDEX = 0
+let MAGIC_BYTE_INDEX = 4
+let COMPRESSION_BYTE_INDEX = 5
+let CHECKSUM_BYTE_INDEX = 6
+let PAYLOAD_BYTE_INDEX = 10
 
 // MESSAGE SET: <MESSAGE LENGTH: uint32><MAGIC: 1 byte><COMPRESSION: 1 byte><CHECKSUM: uint32><MESSAGE PAYLOAD: bytes>
 let encode_msg (msg : Message) : byte[] =
   let msg_length = NO_LEN_HEADER_SIZE + msg.payload.Length
   let msg_arr = Array.zeroCreate (msg_length + 4)
-  let msg_len = (msg.totalLength |> BitConverter.GetBytes)
-  Array.Copy(msg_len, 0, msg_arr, 0, 4)
-  msg_arr.[4] <- msg.magic
-  msg_arr.[5] <- msg.compression
-  Array.Copy(msg.checksum, 0, msg_arr, 6, 4)
-  Array.Copy(msg.payload, 0, msg_arr, 10, msg.payload.Length)
+  let msg_len = (msg.payload_size |> BitConverter.GetBytes)
+  Array.Copy(msg_len, 0, msg_arr, MESSAGE_LENGTH_BYTE_INDEX, 4)
+  msg_arr.[MAGIC_BYTE_INDEX] <- msg.magic
+  msg_arr.[COMPRESSION_BYTE_INDEX] <- msg.compression
+  Array.Copy(msg.checksum, 0, msg_arr, CHECKSUM_BYTE_INDEX, 4)
+  Array.Copy(msg.payload, 0, msg_arr, PAYLOAD_BYTE_INDEX, msg.payload.Length)
   msg_arr
 
-//// MESSAGE SET: <MESSAGE LENGTH: uint32><MAGIC: 1 byte><COMPRESSION: 1 byte><CHECKSUM: uint32><MESSAGE PAYLOAD: bytes>
-//func (m *Message) Encode() []byte {
-//msgLen := NO_LEN_HEADER_SIZE + len(m.payload)
-//msg := make([]byte, 4+msgLen)
-//binary.BigEndian.PutUint32(msg[0:], uint32(msgLen))
-//msg[4] = m.magic
-//msg[5] = m.compression
-//copy(msg[6:], m.checksum[0:])
-//copy(msg[10:], m.payload)
-//return msg
-//}
+let decode_msg (decoded_msg : byte[]) : Message =
+  let compression_type = compression_from_id decoded_msg.[COMPRESSION_BYTE_INDEX]
+
+  //make sure we actually got all our data
+  let payload = decoded_msg.[10..]
+  let provided_payload_size = BitConverter.ToUInt32(decoded_msg, 0)
+  if provided_payload_size <> uint32 payload.Length then
+    failwith "Incorrect package size, might have lost data"
+
+  //make sure the data is not corrupt
+  let crc32_provided = BitConverter.ToUInt32(decoded_msg, CHECKSUM_BYTE_INDEX)
+  let crc32_actual = crc32 payload
+  if crc32_provided <> crc32_actual then
+    failwithf "checksum fail, data is possibly corrupt, expected: %d but got %d" crc32_actual crc32_provided
+
+  let decompressed = decompress_data compression_type decoded_msg.[10..]
+
+  { magic = decoded_msg.[MAGIC_BYTE_INDEX]
+    compression = decoded_msg.[COMPRESSION_BYTE_INDEX]
+    payload = decompressed
+    checksum = Array.sub decoded_msg CHECKSUM_BYTE_INDEX 4
+    offset = 0UL
+    payload_size = BitConverter.ToUInt32(decoded_msg, 0) }
+  
+  
 //func DecodeWithDefaultCodecs(packet []byte) (uint32, []Message) {
 //return Decode(packet, DefaultCodecsMap)
 //}

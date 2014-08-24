@@ -3,7 +3,7 @@
 open Fuchu
 open System.Text
 
-open KafkaFSharp.Codecs
+open KafkaFSharp.Compression
 
 let EMPTY_STRING = Encoding.UTF8.GetBytes("")
 let LONG_STRING = Encoding.UTF8.GetBytes("Hej kamil this will be 
