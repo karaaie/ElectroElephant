@@ -1,12 +1,16 @@
 ﻿module KafkaFSharp.Generator
 
-open KafkaFSharp.Codecs
-open KafkaFSharp.Message
+open FsharpKafka.Crc32
+open KafkaFSharp.Model
+open KafkaFSharp.Compression
 
-let create_new_message (payload : byte []) (compression : Compression) =
+open System
+
+let create_new_message (input_payload : byte []) (compression : Compression) =
+  let compressed_payload = compress_data compression input_payload
   { magic = byte MAGIC_CONST
     compression = compression_id compression
-    payload = compress_data compression payload
-    checksum = [||]
+    payload = compressed_payload
+    checksum = crc32 input_payload |> BitConverter.GetBytes
     offset = 0UL
-    totalLength = 0ul }
+    totalLength = compressed_payload.Length |> uint32 }

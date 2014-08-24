@@ -42,8 +42,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Crc32.fs" />
-    <Compile Include="Message.fs" />
-    <Compile Include="Codecs.fs" />
+    <Compile Include="Model.fs" />
+    <Compile Include="Compression.fs" />
+    <Compile Include="Encoding.fs" />
     <Compile Include="Generator.fs" />
     <None Include="Script.fsx" />
   </ItemGroup>

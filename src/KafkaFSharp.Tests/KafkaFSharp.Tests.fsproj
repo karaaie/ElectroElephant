@@ -47,6 +47,8 @@
   <ItemGroup>
     <None Include="Script.fsx" />
     <None Include="packages.config" />
+    <Compile Include="compression_tests.fs" />
+    <Compile Include="decompression_tests.fs" />
     <Compile Include="progam.fs" />
   </ItemGroup>
   <ItemGroup>
