@@ -23,7 +23,7 @@ type ApiVersion = int16
 type CorrelationId = int32
 type ClientId = string
 
-type MessageOffset = int64
+type Offset = int64
 
 type Crc32 = int32
 type MagicByte = int8
@@ -31,13 +31,12 @@ type MessageAttribute = int8
 type MessageKey = byte []
 type MessageValue = byte []
 
-type TopicErrorCode = int16
+type ErrorCode = int16
 type TopicName = string
 
-type PartitionErrorCode = int16
 type PartitionId = int32
 type LeaderId = int32
-type Replica = int32
+type ReplicaId = int32
 type Isr = int32
 
 
@@ -116,7 +115,7 @@ type PartitionMetadata =
     leader : LeaderId
 
     // The set of alive nodes that currently acts as slaves for the leader for this partition.
-    replicas : Replica list
+    replicas : ReplicaId list
 
     //The set subset of the replicas that are "caught up" to the leader
     isr : Isr list }
@@ -130,20 +129,147 @@ type MetadataResponse =
   { brokers         : Broker list
     topic_metadatas : TopicMetadata list }
 
+
+//    ProduceRequest => RequiredAcks Timeout [TopicName [Partition MessageSetSize MessageSet]]
+//  RequiredAcks => int16
+//  Timeout => int32
+//  Partition => int32
+//  MessageSetSize => int32
+
+
+type RequiredAcks = int16
+type Timeout = int32
+type MessageSetSize = int32
+
+type PartitionData =
+    // The partition that data is being published to.
+  { partion_id : PartitionId
+    // The size, in bytes, of the message set that follows.
+    message_set_size : MessageSetSize
+    // A set of messages in the standard format described above.
+    message_set : MessageSet }
+
+type TopicData =
+    // The topic that data is being published to.
+  { topic_name : TopicName
+    partition_data : PartitionData list }
+    
+type ProduceRequest =
+    // This field indicates how many acknowledgements the servers should receive 
+    // before responding to the request. If it is 0 the server will not send any 
+    // response (this is the only case where the server will not reply 
+    // to a request). If it is 1, the server will wait the data is 
+    // written to the local log before sending a response. If it is 
+    // -1 the server will block until the message is committed by all 
+    // in sync replicas before sending a response. For any number > 1 the server 
+    // will block waiting for this number of acknowledgements to occur (but 
+    // the server will never wait for more acknowledgements 
+    // than there are in-sync replicas).
+  { required_acks : RequiredAcks
+    // This provides a maximum time in milliseconds the server can await 
+    // the receipt of the number of acknowledgements in RequiredAcks. The timeout is 
+    // not an exact limit on the request time for a few reasons: 
+    // (1) it does not include network latency, 
+    // (2) the timer begins at the beginning of the processing of 
+    //     this request so if many requests are queued due to server 
+    //     overload that wait time will not be included, 
+    // (3) we will not terminate a local write so if the local write 
+    //     time exceeds this timeout it will not be respected. To get a 
+    //     hard timeout of this type the client should use the socket timeout.
+    timeout : Timeout
+    topic_data : TopicData list }
+
+
+type ProducePartitionResponse =
+    // The partition this response entry corresponds to.
+    { partition_id : PartitionId
+    // The error from this partition, if any. Errors are given on a per-partition 
+    // basis because a given partition may be unavailable or maintained 
+    // on a different host, while others may have successfully 
+    // accepted the produce request.
+      error_code : ErrorCode
+    // The offset assigned to the first message in the message set appended to this partition.
+      offset : Offset }
+
+type ProduceTopicResponse =
+    // The topic this response entry corresponds to.
+    { topic_name : TopicName 
+      partition_responses : ProducePartitionResponse list}
+
+type ProduceResponse =
+    { topic_responses : ProduceTopicResponse list }
+
+
+//FetchRequest => ReplicaId MaxWaitTime MinBytes [TopicName [Partition FetchOffset MaxBytes]]
+//  ReplicaId => int32
+//  MaxWaitTime => int32
+//  MinBytes => int32
+//  TopicName => string
+//  Partition => int32
+//  FetchOffset => int64
+//  MaxBytes => int32
+
+type MaxWaitTime = int32
+type MinBytes = int32
+type MaxBytes = int32
+
+
+type FetchPartitionData =
+     // The id of the partition the fetch is for.
+    { partition_id : PartitionId
+     // The offset to begin this fetch from.
+      fetch_offset : Offset
+     // The maximum bytes to include in the message set for this partition. This helps bound the size of the response.
+      max_bytes : MaxBytes }
+
+type FetchTopicData =
+     // The name of the topic.
+    { topic_name : TopicName
+      partition_data : FetchPartitionData list }
+
+type FetchRequest =
+     // The replica id indicates the node id of the replica initiating this 
+     // request. Normal client consumers should always specify 
+     // this as -1 as they have no node id. Other brokers set 
+     // this to be their own node id. The value -2 is accepted 
+     // to allow a non-broker to issue fetch requests as if it
+     // were a replica broker for debugging purposes.
+    { replica_id : ReplicaId
+
+     // The max wait time is the maximum amount of time 
+     // in milliseconds to block waiting if insufficient 
+     // data is available at the time the request is issued.
+      max_wait_time : MaxWaitTime
+
+     // This is the minimum number of bytes of messages that must be available to 
+     // give a response. If the client sets this to 0 the server will 
+     // always respond immediately, however if there is no new data 
+     // since their last request they will just get back 
+     // empty message sets. If this is set to 1, the server 
+     // will respond as soon as at least one partition has at 
+     // least 1 byte of data or the specified timeout occurs. 
+     // By setting higher values in combination with the timeout the consumer 
+     // can tune for throughput and trade a little additional latency 
+     // for reading only large chunks of data (e.g. setting 
+     // MaxWaitTime to 100 ms and setting MinBytes to 64k would 
+     // allow the server to wait up to 100ms to try to accumulate 64k of data before responding).
+      min_bytes : MinBytes
+      topic_data : FetchTopicData list }
+
 type RequestTypes =
   // Describes the currently available brokers, their host and port information,
   // and gives information about which broker hosts which partitions.
-  | Metadata 
-  //Send messages to a broker
-  | Send
-  //Fetch messages from a broker, one which fetches data, one which
-  //gets cluster metadata, and one which gets offset information about a topic.
-  | Fetch
-  //Get information about the available offsets for a given topic partition.
+  | Metadata of MetadataRequest
+  // Send messages to a broker
+  | Send of ProduceRequest
+  // Fetch messages from a broker, one which fetches data, one which
+  // gets cluster metadata, and one which gets offset information about a topic.
+  | Fetch of FetchRequest
+  // Get information about the available offsets for a given topic partition.
   | Offsets
-  //Commit a set of offsets for a consumer group
+  // Commit a set of offsets for a consumer group
   | CommitOffset
-  //Fetch a set of offsets for a consumer group
+  // Fetch a set of offsets for a consumer group
   | FetchOffset
 
 type Request =
