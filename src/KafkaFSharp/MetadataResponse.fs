@@ -31,4 +31,3 @@ type TopicMetadata =
 type MetadataResponse =
   { brokers         : Broker list
     topic_metadatas : TopicMetadata list }
-

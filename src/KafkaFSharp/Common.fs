@@ -16,6 +16,10 @@
 //grammars below we will show an array of a structure foo as [foo].
 
 
+type StringSize = int16
+type ByteArraySize = int32
+type ArraySize = int32
+
 type MessageSize = int32
 type ApiKey = int16
 type ApiVersion = int16
@@ -57,7 +61,6 @@ type ConsumerGroup = string
 type CoordinatorId = int32
 
 type Metadata = string
-
 
 // The following are the numeric codes that 
 // the ApiKey in the request can take for each of the above request types.
