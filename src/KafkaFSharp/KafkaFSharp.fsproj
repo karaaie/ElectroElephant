@@ -41,8 +41,26 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Crc32.fs" />
+    <Compile Include="Common.fs" />
+    <Compile Include="CompressionNew.fs" />
     <Compile Include="Message.fs" />
+    <Compile Include="MetadataResponse.fs" />
+    <Compile Include="ProduceResponse.fs" />
+    <Compile Include="FetchResponse.fs" />
+    <Compile Include="OffsetResponse.fs" />
+    <Compile Include="ConsumerMetadataResponse.fs" />
+    <Compile Include="OffsetFetchResponse.fs" />
+    <Compile Include="OffsetCommitResponse.fs" />
+    <Compile Include="Response.fs" />
+    <Compile Include="MetadataRequest.fs" />
+    <Compile Include="ProduceRequest.fs" />
+    <Compile Include="FetchRequest.fs" />
+    <Compile Include="OffsetRequest.fs" />
+    <Compile Include="ConsumerMetadataRequest.fs" />
+    <Compile Include="OffsetFetchRequest.fs" />
+    <Compile Include="OffsetCommitRequest.fs" />
+    <Compile Include="Request.fs" />
+    <Compile Include="Crc32.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="Compression.fs" />
     <Compile Include="Encoding.fs" />
