@@ -47,9 +47,11 @@
   <ItemGroup>
     <None Include="Script.fsx" />
     <None Include="packages.config" />
-    <Compile Include="stream_helper_tests.fs" />
+    <Compile Include="StreamWrapperHelper.fs" />
+    <Compile Include="StreamHelperTests.fs" />
     <Compile Include="MetadataResponseTests.fs" />
     <Compile Include="MetadataRequestTests.fs" />
+    <Compile Include="ProduceRequestTests.fs" />
     <Compile Include="compression_tests.fs" />
     <Compile Include="decompression_tests.fs" />
     <Compile Include="encoding_tests.fs" />

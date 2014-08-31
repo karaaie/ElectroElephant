@@ -1,10 +1,10 @@
 ﻿module ElectroElephant.Tests.MetadataRequestTests
 
-open System.IO
 open Fuchu
 
-open ElectroElephant.Common
 open ElectroElephant.MetadataRequest
+
+open ElectroElephant.Tests.StreamWrapperHelper
 
 let meta_req = 
   { topic_names = ["Sugar"; "Icecream"; "Other fun stuff"]}
@@ -13,10 +13,8 @@ let meta_req =
 let metadata_req_tests =
   testList "" [
     testCase "Serialization and deserialization should not alter content" <| fun _ ->
-      use write_stream = new MemoryStream()
-      serialize meta_req write_stream 
-      use read_stream = new MemoryStream(write_stream.ToArray())
-      let result = deserialize read_stream
+      let result = 
+        stream_wrapper<MetadataRequest> meta_req serialize deserialize 
       Assert.Equal(
         "same topics should be present",
         meta_req.topic_names, result.topic_names)

@@ -34,18 +34,12 @@ type MessageSet =
   { offset    : Offset
     messages  : Message list }
 
-//type DirectionType =
-//  // To Kafka
-//  | Request of Request
-//
-//  // From Kafka
-//  | Response of Response
-//
-//type RequestOrResponse =
-//  //The MessageSize field gives the size of the subsequent request or response 
-//  //message in bytes. The client can read requests by first reading this 4 byte size 
-//  //as an integer N, and then reading and parsing the subsequent N bytes of the request.
-//  { size : MessageSize
-//
-//  // declares if this is a Response or Request
-//    message_type : DirectionType }
+open System.IO
+open ElectroElephant.StreamHelpers
+
+let serialize message_set (stream : MemoryStream) =
+  ()
+
+let deserialize (stream : MemoryStream) =
+  { offset = 0L
+    messages = [] }

@@ -49,6 +49,24 @@ type MemoryStream with
     this.Read(bytes, 0, size) |> ignore
     BitConverter.ToInt32(bytes, 0)
 
+  member this.read_int16_list<'ArrSize,'IntType> () =
+   if sizeof<'IntType> <> sizeof<int16> then
+      failwithf "tried to read int16 list but typed it with %d byte int" sizeof<'IntType>
+   let num_ints = this.read_int32<'ArrSize>()
+   [for i in 1..num_ints do yield this.read_int16<'IntType>()]
+
+  member this.read_int32_list<'ArrSize,'IntType> () =
+   if sizeof<'IntType> <> sizeof<int32> then
+      failwithf "tried to read int32 list but typed it with %d byte int" sizeof<'IntType>
+   let num_ints = this.read_int32<'ArrSize>()
+   [for i in 1..num_ints do yield this.read_int32<'IntType>()]
+
+  member this.read_int64_list<'ArrSize,'IntType> () =
+   if sizeof<'IntType> <> sizeof<int64> then
+      failwithf "tried to read int64 list but typed it with %d byte int" sizeof<'IntType>
+   let num_ints = this.read_int32<'ArrSize>()
+   [for i in 1..num_ints do yield this.read_int64<'IntType>()]
+
   /// <summary>
   ///  Reads a int64 from the stream
   /// </summary>
@@ -96,10 +114,10 @@ type MemoryStream with
   ///  first, followed by each int16 in order they are provided.
   /// </summary>
   /// <param name="int_list">list of int16 to be written to stream</param>
-  member this.write_int_list<'ByteArrSize, 'IntType> ( int_list : int16 list) =
+  member this.write_int_list<'ArrSize, 'IntType> ( int_list : int16 list) =
     if sizeof<'IntType> <> sizeof<int16> then
       failwithf "tried to write int16 but typed it with %d byte int" sizeof<'IntType>
-    this.write_int<'ByteArrSize> (int_list.Length * sizeof<'IntType>)
+    this.write_int<'ArrSize> int_list.Length
     int_list |> List.iter (fun i -> this.write_int<'IntType> i)
 
   /// <summary>
@@ -107,10 +125,10 @@ type MemoryStream with
   ///  first, followed by each int32 in order they are provided.
   /// </summary>
   /// <param name="int_list">list of int32 to be written to stream</param>
-  member this.write_int_list<'ByteArrSize, 'IntType> ( int_list : int32 list) =
+  member this.write_int_list<'ArrSize, 'IntType> ( int_list : int32 list) =
     if sizeof<'IntType> <> sizeof<int32> then
       failwithf "tried to write int32 but typed it with %d byte int" sizeof<'IntType>
-    this.write_int<'ByteArrSize> (int_list.Length * sizeof<'IntType>)
+    this.write_int<'ArrSize> int_list.Length
     int_list |> List.iter (fun i -> this.write_int<'IntType> i)
 
   /// <summary>
@@ -118,10 +136,10 @@ type MemoryStream with
   ///  first, followed by each int16 in order they are provided.
   /// </summary>
   /// <param name="int_list">list of int64 to be written to stream</param>
-  member this.write_int_list<'ByteArrSize, 'IntType> ( int_list : int64 list) =
+  member this.write_int_list<'ArrSize, 'IntType> ( int_list : int64 list) =
     if sizeof<'IntType> <> sizeof<int64> then
       failwithf "tried to write int64 but typed it with %d byte int" sizeof<'IntType>
-    this.write_int<ByteArraySize> (int_list.Length * sizeof<'IntType>)
+    this.write_int<'ArrSize> int_list.Length
     int_list |> List.iter (fun i -> this.write_int<'IntType> i)
 
   /// <summary>

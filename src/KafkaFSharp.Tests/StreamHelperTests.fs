@@ -47,6 +47,11 @@ let tests_str =
       Assert.Equal("should not throw error", null, null_str)
   ]
 
+
+let int16_list = [1s; 2s; 3s; 4s; 5s]
+let int32_list = [6; 7; 8; 9; 10]
+let int64_list = [11L; 12L; 13L; 14L; 15L]
+
 [<Tests>]
 let tests_ints =
   testList "" [
@@ -58,6 +63,14 @@ let tests_ints =
       let read_int = read_stream.read_int64<int64>()
       Assert.Equal("should be the same", 64L, read_int)
 
+    testCase "Serialize int64 list" <| fun _ ->
+      use write_stream = new MemoryStream()
+      write_stream.write_int_list<ArraySize,int64> int64_list
+      write_stream.Flush()
+      use read_stream = new MemoryStream(write_stream.ToArray())
+      let ints = read_stream.read_int64_list<ArraySize,int64> ()
+      Assert.Equal("should be equal", int64_list, ints)
+
     testCase "Serializing int32" <| fun _ ->
       use write_stream = new MemoryStream()
       write_stream.write_int<int32> 32
@@ -66,6 +79,14 @@ let tests_ints =
       let read_int = read_stream.read_int32<int32>()
       Assert.Equal("should be the same", 32, read_int)
 
+    testCase "Serialize int32 list" <| fun _ ->
+      use write_stream = new MemoryStream()
+      write_stream.write_int_list<ArraySize,int32> int32_list
+      write_stream.Flush()
+      use read_stream = new MemoryStream(write_stream.ToArray())
+      let ints = read_stream.read_int32_list<ArraySize,int32> ()
+      Assert.Equal("should be equal", int32_list, ints)
+
     testCase "Serializing int16" <| fun _ ->
       use write_stream = new MemoryStream()
       write_stream.write_int<int16> 16s
@@ -73,5 +94,13 @@ let tests_ints =
       use read_stream = new MemoryStream(write_stream.ToArray())
       let read_int = read_stream.read_int16<int16>()
       Assert.Equal("should be the same", 16s, read_int)
+
+    testCase "Serialize int16 list" <| fun _ ->
+      use write_stream = new MemoryStream()
+      write_stream.write_int_list<ArraySize,int16> int16_list
+      write_stream.Flush()
+      use read_stream = new MemoryStream(write_stream.ToArray())
+      let ints = read_stream.read_int16_list<ArraySize,int16> ()
+      Assert.Equal("should be equal", int16_list, ints)
   ]
 
