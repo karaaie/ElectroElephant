@@ -1,6 +1,9 @@
 ﻿module ElectroElephant.MetadataResponse
 
+open System.IO
+
 open ElectroElephant.Common
+open ElectroElephant.StreamHelpers
 
 type Broker =
   { node_id : NodeId
@@ -31,3 +34,29 @@ type TopicMetadata =
 type MetadataResponse =
   { brokers         : Broker list
     topic_metadatas : TopicMetadata list }
+
+let private serialize_broker (stream : MemoryStream) broker =
+  stream.write_int<NodeId>(broker.node_id)
+  stream.write_str<StringSize>(broker.host)
+  stream.write_int<Port>(broker.port)
+
+let private serialize_partition
+      (stream : MemoryStream)
+      (partition : PartitionMetadata) =
+
+  stream.write_int<ErrorCode> partition.error_code
+  stream.write_int<LeaderId> partition.leader
+  stream.write_int_list<ByteArraySize, ReplicaId> partition.replicas
+  stream.write_int_list<ByteArraySize, Isr> partition.isr
+
+let private serialize_topic (stream : MemoryStream) topic =
+  stream.write_int<ErrorCode> topic.error_code
+  stream.write_str<StringSize> topic.name
+  topic.partitions |> List.iter (serialize_partition stream)
+
+let serialize meta_resp (stream : MemoryStream) =
+  meta_resp.brokers |> List.iter (serialize_broker stream)
+  meta_resp.topic_metadatas |> List.iter (serialize_topic stream)
+
+let deserialize (stream : MemoryStream) : MetadataResponse =
+  ()

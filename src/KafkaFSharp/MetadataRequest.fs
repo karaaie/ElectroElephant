@@ -11,9 +11,8 @@ type MetadataRequest =
   { topic_names : TopicName list }
 
 let serialize req (stream : MemoryStream) =
-  req.topic_names |> stream.write_str_list
+  stream.write_str_list<ArraySize, StringSize> req.topic_names
   ()
 
 let deserialize (stream : MemoryStream) : MetadataRequest =
-  let num_topics = stream.read_int32<ArraySize>()
-  { topic_names = [for i in 1..num_topics do yield stream.read_str()] }
+  { topic_names = stream.read_str_list<ArraySize, StringSize> () }

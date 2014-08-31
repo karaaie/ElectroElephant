@@ -12,6 +12,7 @@ open ElectroElephant.Common
 type MemoryStream with
 
 // Blargh... WHY U NO ?!?!?!
+// Covariants / Contravariant.. must look in to it.
 //  member this.read_int<'IntType> () =
 //    let size = sizeof<'IntType>
 //    let bytes = Array.zeroCreate sizeof<'IntType>
@@ -60,20 +61,68 @@ type MemoryStream with
     this.Read(bytes, 0, size) |> ignore
     BitConverter.ToInt64(bytes, 0)
 
+  /// <summary>
+  /// Writes a int16 to the stream, the given type will be compared
+  /// to int16, if they don't match an error will be thrown.
+  /// </summary>
+  /// <param name="i">int16 to be written to stream</param>
   member this.write_int<'IntType> ( i : int16 ) =
     if sizeof<'IntType> <> sizeof<int16> then
       failwithf "tried to write int16 but typed it with %d byte int" sizeof<'IntType>
     this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
 
+  /// <summary>
+  /// Writes a int32 to the stream, the given type will be compared
+  /// to int16, if they don't match an error will be thrown.
+  /// </summary>
+  /// <param name="i">int32 to be written to stream</param>
   member this.write_int<'IntType> ( i : int32 ) =
     if sizeof<'IntType> <> sizeof<int32> then
       failwithf "tried to write int32 but typed it with %d byte int" sizeof<'IntType>
     this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
 
+  /// <summary>
+  /// Writes a int64 to the stream, the given type will be compared
+  /// to int16, if they don't match an error will be thrown.
+  /// </summary>
+  /// <param name="i">int64 to be written to stream</param>
   member this.write_int<'IntType> ( i : int64 )=
     if sizeof<'IntType> <> sizeof<int64> then
       failwithf "tried to write int64 but typed it with %d byte int" sizeof<'IntType>
     this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
+
+  /// <summary>
+  ///  Writes a list of int16 to the stream. It writes the size of the array
+  ///  first, followed by each int16 in order they are provided.
+  /// </summary>
+  /// <param name="int_list">list of int16 to be written to stream</param>
+  member this.write_int_list<'ByteArrSize, 'IntType> ( int_list : int16 list) =
+    if sizeof<'IntType> <> sizeof<int16> then
+      failwithf "tried to write int16 but typed it with %d byte int" sizeof<'IntType>
+    this.write_int<'ByteArrSize> (int_list.Length * sizeof<'IntType>)
+    int_list |> List.iter (fun i -> this.write_int<'IntType> i)
+
+  /// <summary>
+  ///  Writes a list of int32 to the stream. It writes the size of the array
+  ///  first, followed by each int32 in order they are provided.
+  /// </summary>
+  /// <param name="int_list">list of int32 to be written to stream</param>
+  member this.write_int_list<'ByteArrSize, 'IntType> ( int_list : int32 list) =
+    if sizeof<'IntType> <> sizeof<int32> then
+      failwithf "tried to write int32 but typed it with %d byte int" sizeof<'IntType>
+    this.write_int<'ByteArrSize> (int_list.Length * sizeof<'IntType>)
+    int_list |> List.iter (fun i -> this.write_int<'IntType> i)
+
+  /// <summary>
+  ///  Writes a list of int64 to the stream. It writes the size of the array
+  ///  first, followed by each int16 in order they are provided.
+  /// </summary>
+  /// <param name="int_list">list of int64 to be written to stream</param>
+  member this.write_int_list<'ByteArrSize, 'IntType> ( int_list : int64 list) =
+    if sizeof<'IntType> <> sizeof<int64> then
+      failwithf "tried to write int64 but typed it with %d byte int" sizeof<'IntType>
+    this.write_int<ByteArraySize> (int_list.Length * sizeof<'IntType>)
+    int_list |> List.iter (fun i -> this.write_int<'IntType> i)
 
   /// <summary>
   /// reads a string from a stream. It will first read sizeof<StringSize> from
@@ -90,6 +139,9 @@ type MemoryStream with
       this.Read(str_bytes, 0, int str_size) |> ignore
       Encoding.UTF8.GetString(str_bytes)
 
+  /// <summary>
+  ///  Reads and returns a list of of strings from the stream.
+  /// </summary>
   member this.read_str_list<'ArrSize, 'StrSize> () =
     let num_strs = this.read_int32<'ArrSize> ()
     [ for i in 1..num_strs do yield this.read_str<'StrSize> () ]
