@@ -60,29 +60,20 @@ type MemoryStream with
     this.Read(bytes, 0, size) |> ignore
     BitConverter.ToInt64(bytes, 0)
 
-  member private this.write_int16 i =
-    this.Write((int16 i) |> BitConverter.GetBytes, 0, sizeof<int16>)
+  member this.write_int<'IntType> ( i : int16 ) =
+    if sizeof<'IntType> <> sizeof<int16> then
+      failwithf "tried to write int16 but typed it with %d byte int" sizeof<'IntType>
+    this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
 
-  member private this.write_int32 i =
-    this.Write((int32 i) |> BitConverter.GetBytes, 0, sizeof<int32>)
+  member this.write_int<'IntType> ( i : int32 ) =
+    if sizeof<'IntType> <> sizeof<int32> then
+      failwithf "tried to write int32 but typed it with %d byte int" sizeof<'IntType>
+    this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
 
-  member private this.write_int64 i =
-    this.Write((int64 i) |> BitConverter.GetBytes, 0, sizeof<int64>)
-
-  /// <summary>
-  /// Writes an integer to the stream, the type parameter will
-  /// decide how many bytes the int consists of.
-  /// </summary>
-  /// <param name="i">the integer to write to the stream</param>
-  member this.write_int<'IntType> i =
-    // This is a bit hacky, but the generic system did not allow me to
-    // to write a fully generic write_int method. BitConverter.GetBytes
-    // didn't understand which overload to use.
-    match sizeof<'IntType> with
-    | 2       -> i |> this.write_int16
-    | 4       -> i |> this.write_int32
-    | 8       -> i |> this.write_int64
-    | unknown -> failwithf "non-supported int with size %d" unknown
+  member this.write_int<'IntType> ( i : int64 )=
+    if sizeof<'IntType> <> sizeof<int64> then
+      failwithf "tried to write int64 but typed it with %d byte int" sizeof<'IntType>
+    this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
 
   /// <summary>
   /// reads a string from a stream. It will first read sizeof<StringSize> from
@@ -92,9 +83,12 @@ type MemoryStream with
   /// <param name="stream">the stream to read from.</param>
   member this.read_str<'StrSize> () =
     let str_size = this.read_int16<StringSize> ()
-    let str_bytes = Array.zeroCreate (int str_size)
-    this.Read(str_bytes, 0, int str_size) |> ignore
-    Encoding.UTF8.GetString(str_bytes)
+    if str_size = -1s then
+      null
+    else
+      let str_bytes = Array.zeroCreate (int str_size)
+      this.Read(str_bytes, 0, int str_size) |> ignore
+      Encoding.UTF8.GetString(str_bytes)
 
   member this.read_str_list<'ArrSize, 'StrSize> () =
     let num_strs = this.read_int32<'ArrSize> ()
@@ -106,9 +100,12 @@ type MemoryStream with
   /// </summary>
   /// <param name="str">the string to write to the stream</param>
   member this.write_str<'StrSize> (str : string) =
-    let name_bytes = Encoding.UTF8.GetBytes(str)
-    this.write_int<'StrSize> name_bytes.Length
-    this.Write(Encoding.UTF8.GetBytes(str), 0, name_bytes.Length)
+    if str = null then
+      this.write_int<StringSize> -1s
+    else
+      let name_bytes = Encoding.UTF8.GetBytes(str)
+      this.write_int<'StrSize> (int16 name_bytes.Length)
+      this.Write(Encoding.UTF8.GetBytes(str), 0, name_bytes.Length)
 
   /// <summary>
   ///  Writes the list of strings to the stream, it will first 

@@ -1,12 +1,17 @@
 ﻿module ElectroElephant.Common
 
-//Fixed Width Primitives
+//===========Fixed Width Primitives==============
 //
-//int8, int16, int32, int64 - Signed integers with the given precision (in bits) stored in big endian order.
+//int8, int16, int32, int64 
+//   Signed integers with the given precision (in bits) stored 
+//   in big endian order.
 //
-//Variable Length Primitives
+//=========Variable Length Primitives============
 //
-//bytes, string - These types consist of a signed integer giving a length N followed by N bytes of content. A length of -1 indicates null. string uses an int16 for its size, and bytes uses an int32.
+//bytes, string - These types consist of a signed integer 
+// giving a length N followed by N bytes of content. 
+// A length of -1 indicates null. string uses an int16 
+// for its size, and bytes uses an int32.
 //
 //Arrays
 //
