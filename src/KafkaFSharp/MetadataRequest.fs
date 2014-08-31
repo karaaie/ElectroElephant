@@ -15,5 +15,5 @@ let serialize req (stream : MemoryStream) =
   ()
 
 let deserialize (stream : MemoryStream) : MetadataRequest =
-  let num_topics : ArraySize = stream.read_int()
+  let num_topics = stream.read_int32<ArraySize>()
   { topic_names = [for i in 1..num_topics do yield stream.read_str()] }

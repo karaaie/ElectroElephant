@@ -8,11 +8,6 @@ open Microsoft.FSharp.Core.Operators
 
 open ElectroElephant.Common
 
-type IntReturnType =
- | Bytes2 of int16
- | Bytes4 of int32
- | Bytes8 of int64
-
 
 type MemoryStream with
 
@@ -33,40 +28,36 @@ type MemoryStream with
   ///  Reads a int16 from the stream
   /// </summary>
   /// <param name="stream">the stream to read from</param>
-  member this.read_int () : int16 =
-    let size = sizeof<int16>
-    let bytes = Array.zeroCreate sizeof<int16>
-    let read_bytes = this.Read(bytes, 0, size)
-    if size <> read_bytes then
-      failwithf """failed to read integer from size, 
-        read %d bytes but expected %d""" read_bytes size 
+  member this.read_int16<'IntType> () =
+    if sizeof<'IntType> <> sizeof<int16> then
+      failwithf "tried to read int16 but typed it with %d byte int" sizeof<'IntType>
+    let size = sizeof<'IntType>
+    let bytes = Array.zeroCreate sizeof<'IntType>
+    this.Read(bytes, 0, size) |> ignore
     BitConverter.ToInt16(bytes, 0)
 
   /// <summary>
-  ///  Reads a int16 from the stream
+  ///  Reads a int32 from the stream
   /// </summary>
   /// <param name="stream">the stream to read from</param>
-  member this.read_int () : int32 =
-    let size = sizeof<int16>
-    let bytes = Array.zeroCreate sizeof<int16>
-    let read_bytes = this.Read(bytes, 0, size)
-    if size <> read_bytes then
-      failwithf """failed to read integer from size, 
-        read %d bytes but expected %d""" read_bytes size 
+  member this.read_int32<'IntType> () =
+    if sizeof<'IntType> <> sizeof<int32> then
+      failwithf "tried to read int32 but typed it with %d byte int" sizeof<'IntType>
+    let size = sizeof<'IntType>
+    let bytes = Array.zeroCreate sizeof<'IntType>
+    this.Read(bytes, 0, size) |> ignore
     BitConverter.ToInt32(bytes, 0)
-  
 
   /// <summary>
-  ///  Reads a int16 from the stream
+  ///  Reads a int64 from the stream
   /// </summary>
   /// <param name="stream">the stream to read from</param>
-  member this.read_int () : int64 =
-    let size = sizeof<int64>
-    let bytes = Array.zeroCreate sizeof<int64>
-    let read_bytes = this.Read(bytes, 0, size)
-    if size <> read_bytes then
-      failwithf """failed to read integer from size, 
-        read %d bytes but expected %d""" read_bytes size 
+  member this.read_int64<'IntType> () =
+    if sizeof<'IntType> <> sizeof<int64> then
+      failwithf "tried to read int32 but typed it with %d byte int" sizeof<'IntType>
+    let size = sizeof<'IntType>
+    let bytes = Array.zeroCreate sizeof<'IntType>
+    this.Read(bytes, 0, size) |> ignore
     BitConverter.ToInt64(bytes, 0)
 
   member private this.write_int16 i =
@@ -99,11 +90,15 @@ type MemoryStream with
   /// and return the string as UTF8 encoded.
   /// </summary>
   /// <param name="stream">the stream to read from.</param>
-  member this.read_str () =
-    let str_size : StringSize = this.read_int ()
+  member this.read_str<'StrSize> () =
+    let str_size = this.read_int16<StringSize> ()
     let str_bytes = Array.zeroCreate (int str_size)
     this.Read(str_bytes, 0, int str_size) |> ignore
     Encoding.UTF8.GetString(str_bytes)
+
+  member this.read_str_list<'ArrSize, 'StrSize> () =
+    let num_strs = this.read_int32<'ArrSize> ()
+    [ for i in 1..num_strs do yield this.read_str<'StrSize> () ]
 
   /// <summary>
   /// First writes the length of the string as an int to the stream
@@ -111,9 +106,9 @@ type MemoryStream with
   /// </summary>
   /// <param name="str">the string to write to the stream</param>
   member this.write_str<'StrSize> (str : string) =
-    this.Write(str.Length |> BitConverter.GetBytes, 0, sizeof<'StrSize>)
     let name_bytes = Encoding.UTF8.GetBytes(str)
-    this.Write(name_bytes, 0, name_bytes.Length)
+    this.write_int<'StrSize> name_bytes.Length
+    this.Write(Encoding.UTF8.GetBytes(str), 0, name_bytes.Length)
 
   /// <summary>
   ///  Writes the list of strings to the stream, it will first 
@@ -122,6 +117,4 @@ type MemoryStream with
   /// <param name="str_list"></param>
   member this.write_str_list<'ArrSize, 'StrSize> (str_list : string list) =
     this.write_int<'ArrSize> str_list.Length
-    str_list |> List.iter (fun str ->
-      this.write_int<'StrSize> str.Length
-      this.write_str str )
+    str_list |> List.iter (fun str -> this.write_str<'StrSize> str)
