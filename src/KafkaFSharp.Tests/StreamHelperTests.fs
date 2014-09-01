@@ -1,4 +1,4 @@
-﻿module ElectroElephant.Tests.stream_helper_tests
+﻿module ElectroElephant.Tests.StreamHelperTests
 
 open System
 open System.IO

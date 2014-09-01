@@ -37,8 +37,7 @@ type MessageSet =
 open System.IO
 open ElectroElephant.StreamHelpers
 
-let serialize message_set (stream : MemoryStream) =
-  ()
+let serialize message_set (stream : MemoryStream) : unit =  ()
 
 let deserialize (stream : MemoryStream) =
   { offset = 0L
