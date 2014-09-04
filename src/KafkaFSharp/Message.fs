@@ -1,7 +1,10 @@
 ﻿module ElectroElephant.Message
 
+open System.IO
+
 open ElectroElephant.Common
 open ElectroElephant.CompressionNew
+open ElectroElephant.StreamHelpers
 
 type Message =
     // The CRC is the CRC32 of the remainder of the message
@@ -34,10 +37,8 @@ type MessageSet =
   { offset    : Offset
     messages  : Message list }
 
-open System.IO
-open ElectroElephant.StreamHelpers
-
-let serialize message_set (stream : MemoryStream) : unit =  ()
+let serialize message_set (stream : MemoryStream) =
+  ()
 
 let deserialize (stream : MemoryStream) =
   { offset = 0L

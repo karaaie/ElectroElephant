@@ -8,22 +8,29 @@ open Microsoft.FSharp.Core.Operators
 
 open ElectroElephant.Common
 
+//===========Fixed Width Primitives==============
+//
+//int8, int16, int32, int64 
+//   Signed integers with the given precision (in bits) stored 
+//   in big endian order.
+//
+//=========Variable Length Primitives============
+//
+//bytes, string - These types consist of a signed integer 
+// giving a length N followed by N bytes of content. 
+// A length of -1 indicates null. string uses an int16 
+// for its size, and bytes uses an int32.
+//
+//Arrays
+//
+//This is a notation for handling repeated structures. These will always be 
+//encoded as an int32 size containing the length N followed by N repetitions of 
+//the structure which can itself be made up of other primitive types. In the BNF 
+//grammars below we will show an array of a structure foo as [foo].
+
+let NullStringIndicator =  -1s
 
 type MemoryStream with
-
-// Blargh... WHY U NO ?!?!?!
-// Covariants / Contravariant.. must look in to it.
-//  member this.read_int<'IntType> () =
-//    let size = sizeof<'IntType>
-//    let bytes = Array.zeroCreate sizeof<'IntType>
-//    let read_bytes = this.Read(bytes, 0, size)
-//    if size <> read_bytes then
-//      failwithf """failed to read integer from size, 
-//        read %d bytes but expected %d""" read_bytes size 
-//    match size with
-//    | 2 -> BitConverter.ToInt16(bytes, 0)
-//    | 4 -> BitConverter.ToInt32(bytes, 0)
-//    | 8 -> BitConverter.ToInt64(bytes, 0)
 
   /// <summary>
   ///  Reads a int16 from the stream
@@ -150,7 +157,7 @@ type MemoryStream with
   /// <param name="stream">the stream to read from.</param>
   member this.read_str<'StrSize> () =
     let str_size = this.read_int16<StringSize> ()
-    if str_size = -1s then
+    if str_size = NullStringIndicator then
       null
     else
       let str_bytes = Array.zeroCreate (int str_size)
@@ -171,17 +178,18 @@ type MemoryStream with
   /// <param name="str">the string to write to the stream</param>
   member this.write_str<'StrSize> (str : string) =
     if str = null then
-      this.write_int<StringSize> -1s
+      this.write_int<StringSize> NullStringIndicator
     else
       let name_bytes = Encoding.UTF8.GetBytes(str)
       this.write_int<'StrSize> (int16 name_bytes.Length)
       this.Write(Encoding.UTF8.GetBytes(str), 0, name_bytes.Length)
-
+ 
   /// <summary>
   ///  Writes the list of strings to the stream, it will first 
   ///  write the size of the array, then each string in order.
   /// </summary>
-  /// <param name="str_list"></param>
+  /// <param name="str_list">string list to serialize</param>
+
   member this.write_str_list<'ArrSize, 'StrSize> (str_list : string list) =
     this.write_int<'ArrSize> str_list.Length
     str_list |> List.iter (fun str -> this.write_str<'StrSize> str)

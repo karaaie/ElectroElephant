@@ -1,4 +1,4 @@
-﻿module ElectroElephant.Tests.FetchResponseTests
+module ElectroElephant.Tests.FetchResponseTests
 
 open Fuchu
 

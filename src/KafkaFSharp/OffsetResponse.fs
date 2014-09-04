@@ -20,42 +20,46 @@ type TopicOffsetResponseData =
 type OffsetResponse =
   { topic_offset_data : TopicOffsetResponseData list}
 
-let private serialize_partition_offset (stream : MemoryStream) partition_offset =
-  stream.write_int<PartitionId> partition_offset.partition_id
-  stream.write_int<ErrorCode> partition_offset.error_code
-  stream.write_int_list<ArraySize, Offset> partition_offset.offsets
+open System.IO
+open ElectroElephant.StreamHelpers
 
-let private serialize_topic_offset (stream : MemoryStream) topic_offset =
-  stream.write_str<StringSize> topic_offset.topic_name
-  stream.write_int<ArraySize> topic_offset.partition_offset_data.Length
-  topic_offset.partition_offset_data |> List.iter (serialize_partition_offset stream)
+let private serialize_partition_offset (stream : MemoryStream) partition_off =
+  stream.write_int<PartitionId> partition_off.partition_id
+  stream.write_int<ErrorCode> partition_off.error_code
+  stream.write_int_list<ArraySize, Offset> partition_off.offsets
+
+let private serialize_topic_offset (stream : MemoryStream) topic_off =
+  stream.write_str<StringSize> topic_off.topic_name
+  stream.write_int<ArraySize> topic_off.partition_offset_data.Length
+  topic_off.partition_offset_data |> List.iter (serialize_partition_offset stream)
 
 /// <summary>
-///  Serializes OffsetResponse to a stream
+///  Serializes a OffsetResponse to the given stream
 /// </summary>
-/// <param name="partition_offset_resp">the OffsetRespons to serialize</param>
-/// <param name="stream">the stream to serialize to</param>
-let serialize offset_resp (stream : MemoryStream) =
-  stream.write_int<ArraySize> offset_resp.topic_offset_data.Length
-  offset_resp.topic_offset_data |> List.iter (serialize_topic_offset stream)
+/// <param name="off_resp">OffsetPartition to be serialized</param>
+/// <param name="stream">stream to serialize to</param>
+let serialize off_resp (stream : MemoryStream ) =
+  stream.write_int<ArraySize> off_resp.topic_offset_data.Length
+  off_resp.topic_offset_data |> List.iter (serialize_topic_offset stream)
 
-let private deserialize_partition_offset_data (stream : MemoryStream) =
+let private deserialize_partition_offset (stream : MemoryStream) =
   { partition_id = stream.read_int32<PartitionId> ()
     error_code = stream.read_int16<ErrorCode> ()
     offsets = stream.read_int64_list<ArraySize,Offset> ()}
 
-let private deserialize_partition_offset_datas (stream : MemoryStream) =
-  let num_parts = stream.read_int32<ArraySize>()
-  [for i in 1..num_parts do yield deserialize_partition_offset_data stream]
+let private deserialize_partition_offsets (stream : MemoryStream) =
+  let num_partitions = stream.read_int32<ArraySize> ()
+  [for i in 1..num_partitions do yield deserialize_partition_offset stream]
 
-let private deserialize_topic_data (stream : MemoryStream) =
+let private  deserialize_topic_offsets (stream : MemoryStream) =
   { topic_name = stream.read_str<StringSize> ()
-    partition_offset_data = deserialize_partition_offset_datas stream}
-
+    partition_offset_data = deserialize_partition_offsets stream}
+ 
 /// <summary>
-///   Deserialize a OffsetResponse from the stream
+///  Deserializes  a OffsetResponse from the given stream
 /// </summary>
-/// <param name="stream">a stream which contains a OffsetResponse</param>
+/// <param name="stream">stream containing a OffsetResponse</param>
 let deserialize (stream : MemoryStream) =
-  let num_topics = stream.read_int32<ArraySize> ()
-  { topic_offset_data = [for i in 1..num_topics do yield deserialize_topic_data stream]}
+  let num_topics = stream.read_int32<ArraySize>()
+  { topic_offset_data =
+    [for i in 1..num_topics do yield deserialize_topic_offsets stream]}
