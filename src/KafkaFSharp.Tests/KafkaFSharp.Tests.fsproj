@@ -57,6 +57,7 @@
     <Compile Include="OffsetResponseTests.fs" />
     <Compile Include="ConsumerMetadataResponseTests.fs" />
     <Compile Include="OffsetFetchResponse.fs" />
+    <Compile Include="OffsetCommitResponseTests.fs" />
     <Compile Include="compression_tests.fs" />
     <Compile Include="decompression_tests.fs" />
     <Compile Include="encoding_tests.fs" />

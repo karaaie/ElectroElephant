@@ -24,4 +24,3 @@ type Response =
   // the correlation in the request.
   { correlation_id : CorrelationId
     response_type : ResponseTypes }
-
