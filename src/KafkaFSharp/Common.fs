@@ -70,159 +70,76 @@ type Metadata = string
 // The following are the numeric codes that 
 // the ApiKey in the request can take for each of the above request types.
 type ApiKeys =
-  | ProduceRequest
-  | FetchRequest
-  | OffsetRequest
-  | MetaDataRequest
-  | OffsetCommitRequest
-  | OffsetFetchRequest
-  | ConsumerMetadataRequest
-  | InternalApi
-
-let number_to_api_key number =
-  match number with 
-  | 0 -> ProduceRequest
-  | 1 -> FetchRequest
-  | 2 -> OffsetRequest
-  |  3 -> MetaDataRequest
-  | 4 | 5 | 6 | 7 -> InternalApi
-  | 8 -> OffsetCommitRequest
-  | 9 -> OffsetFetchRequest
-  | 10 -> ConsumerMetadataRequest
-  | wrong -> failwithf "unknown api number %d" wrong
-
-let api_key_to_number key =
-  match key with
-  | ProduceRequest -> 0
-  | FetchRequest -> 1
-  | OffsetRequest -> 2
-  | MetaDataRequest -> 3
-  | OffsetCommitRequest -> 8
-  | OffsetFetchRequest -> 9
-  | ConsumerMetadataRequest -> 10
-  | InternalApi -> 4
-
+  | ProduceRequest          = 0
+  | FetchRequest            = 1
+  | OffsetRequest           = 2
+  | MetaDataRequest         = 3
+  | OffsetCommitRequest     = 8
+  | OffsetFetchRequest      = 9
+  | ConsumerMetadataRequest = 10
 
 type ErrorCodes =
-  // 0
   //No error--it worked!
-  | NoError
+  | NoError =  0
 
-  // -1
   // An unexpected server error
-  | Unknown
+  | Unknown = -1
 
-  // 1
   // The requested offset is outside the range of 
   // offsets maintained by the server for the given topic/partition.
-  | OffsetOutOfRange
+  | OffsetOutOfRange = 1
 
-  // 2
   // This indicates that a message contents does not match its CRC
-  | InvalidMessage
+  | InvalidMessage = 2
 
-  // 3
   // This request is for a topic or partition that does not exist on this broker.
-  | UnknownTopicOrPartition
+  | UnknownTopicOrPartition = 3
 
-  // 4
   // The message has a negative size
-  | InvalidMessageSize
+  | InvalidMessageSize = 4
 
-  // 5
   // This error is thrown if we are in the middle of a leadership 
   // election and there is currently no leader for this partition 
   // and hence it is unavailable for writes.
-  | LeaderNotAvailable
+  | LeaderNotAvailable = 5
 
-  // 6
   // This error is thrown if the client attempts to send messages 
   // to a replica that is not the leader for some partition. It 
   // indicates that the clients metadata is out of date.
-  | NotLeaderForPartition
+  | NotLeaderForPartition = 6
 
-  // 7
   // This error is thrown if the request exceeds the 
   // user-specified time limit in the request.
-  | RequestTimedOut
+  | RequestTimedOut = 7
 
-  // 8
   // This is not a client facing error and is used mostly by tools when a broker is not alive.
-  | BrokerNotAvailable
+  | BrokerNotAvailable = 8
 
-  // 9
   // If replica is expected on a broker, but is not.
-  | ReplicaNotAvailable
+  | ReplicaNotAvailable = 9
 
-  // 10
   // The server has a configurable maximum message size to avoid 
   // unbounded memory allocation. This error is thrown if 
   // the client attempt to produce a message larger than this maximum.
-  | MessageSizeTooLarge
+  | MessageSizeTooLarge = 10
 
-  // 11
   // Internal error code for broker-to-broker communication.
-  | StaleControllerEpochCode
+  | StaleControllerEpochCode = 11
 
-  // 12
   // If you specify a string larger than configured maximum for offset metadata
-  | OffsetMetadataTooLargeCode
+  | OffsetMetadataTooLargeCode = 12
 
-  // 14
   // The broker returns this error code for an offset fetch 
   // request if it is still loading offsets (after a leader 
   // change for that offsets topic partition).
-  | OffsetsLoadInProgressCode
+  | OffsetsLoadInProgressCode = 14
 
-  // 15 
   // The broker returns this error code for consumer metadata 
   // requests or offset commit requests if the 
   // offsets topic has not yet been created.
-  | ConsumerCoordinatorNotAvailableCode
+  | ConsumerCoordinatorNotAvailableCode = 15
 
-  // 16
   // The broker returns this error code if it receives an offset 
   // fetch or commit request for a consumer group 
   // that it is not a coordinator for.
-  | NotCoordinatorForConsumerCode
-
-let number_to_error number =
-  match number with
-  | 0 -> NoError
-  | -1 -> Unknown
-  | 1 -> OffsetOutOfRange
-  | 2 -> InvalidMessage
-  | 3 ->  UnknownTopicOrPartition
-  | 4 -> InvalidMessageSize
-  | 5 -> LeaderNotAvailable
-  | 6 -> NotLeaderForPartition
-  | 7 -> RequestTimedOut
-  | 8 -> BrokerNotAvailable
-  | 9 -> ReplicaNotAvailable
-  | 10 -> MessageSizeTooLarge
-  | 11 -> StaleControllerEpochCode
-  | 12 -> OffsetMetadataTooLargeCode
-  | 14 -> OffsetsLoadInProgressCode
-  | 15 -> ConsumerCoordinatorNotAvailableCode
-  | 16 -> NotCoordinatorForConsumerCode
-  | wrong -> failwithf "unknown error code %d " wrong
-
-let error_to_number error =
-  match error with
-  | NoError -> 0
-  | Unknown -> -1
-  | OffsetOutOfRange -> 1 
-  | InvalidMessage -> 2
-  | UnknownTopicOrPartition -> 3
-  | InvalidMessageSize -> 4
-  | LeaderNotAvailable -> 5
-  | NotLeaderForPartition -> 6
-  | RequestTimedOut -> 7
-  | BrokerNotAvailable -> 8
-  | ReplicaNotAvailable -> 9
-  | MessageSizeTooLarge -> 10
-  | StaleControllerEpochCode -> 11
-  | OffsetMetadataTooLargeCode -> 12
-  | OffsetsLoadInProgressCode -> 14
-  | ConsumerCoordinatorNotAvailableCode -> 15
-  | NotCoordinatorForConsumerCode -> 16
+  | NotCoordinatorForConsumerCode = 16
