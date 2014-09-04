@@ -4,8 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>431caea9-8d95-4a5e-a3bd-09ced1dc9f1e</ProjectGuid>
+    <ProjectGuid>{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>KafkaFSharp</RootNamespace>
     <AssemblyName>KafkaFSharp</AssemblyName>

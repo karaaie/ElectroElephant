@@ -5,7 +5,7 @@ open System.IO
 open ElectroElephant.StreamHelpers
 open ElectroElephant.Common
 
-
+[<StructuralEquality;StructuralComparison>]
 type ProducePartitionResponse =
     // The partition this response entry corresponds to.
     { partition_id : PartitionId
@@ -17,11 +17,13 @@ type ProducePartitionResponse =
     // The offset assigned to the first message in the message set appended to this partition.
       offset : Offset }
 
+[<StructuralEquality;StructuralComparison>]
 type ProduceTopicResponse =
     // The topic this response entry corresponds to.
     { topic_name : TopicName 
       partition_responses : ProducePartitionResponse list}
 
+[<StructuralEquality;StructuralComparison>]
 type ProduceResponse =
     { topic_responses : ProduceTopicResponse list }
 

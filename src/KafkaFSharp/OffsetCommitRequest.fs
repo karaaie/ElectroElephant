@@ -2,6 +2,7 @@
 
 open ElectroElephant.Common
 
+[<StructuralEquality;StructuralComparison>]
 type PartitionOffsetCommit =
   { partition_id : PartitionId
     partition_offset : Offset
@@ -10,10 +11,12 @@ type PartitionOffsetCommit =
     timestamp : Time
     metadata : Metadata }
 
+[<StructuralEquality;StructuralComparison>]
 type TopicOffsetCommit =
   { topic_name : TopicName
     partition_offset_commit : PartitionOffsetCommit list}
 
+[<StructuralEquality;StructuralComparison>]
 type OffsetCommitRequest = 
   { consumer_group : ConsumerGroup
     topic_offset_commit : TopicOffsetCommit list }

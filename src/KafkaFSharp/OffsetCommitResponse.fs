@@ -2,14 +2,17 @@
 
 open ElectroElephant.Common
 
+[<StructuralEquality;StructuralComparison>]
 type PartitionCommitResponse =
   { partition_id : PartitionId
     error_code : ErrorCode }
 
+[<StructuralEquality;StructuralComparison>]
 type TopicCommitResponse =
   { topic_name : TopicName
     partition_commit_response : PartitionCommitResponse list }
 
+[<StructuralEquality;StructuralComparison>]
 type OffsetCommitResponse =
   { topic_commit_response : TopicCommitResponse list}
 
@@ -30,7 +33,7 @@ let private serialize_topic_commit (stream : MemoryStream) topic_commit =
 /// </summary>
 /// <param name="stream">the OffsetCommitResponse to serialize</param>
 /// <param name="offset_commit">the stream to serialize to</param>
-let serialize (stream: MemoryStream) offset_commit =
+let serialize offset_commit (stream: MemoryStream) =
   stream.write_int<ArraySize> offset_commit.topic_commit_response.Length
   offset_commit.topic_commit_response |> List.iter (serialize_topic_commit stream)
 

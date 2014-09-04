@@ -4,16 +4,19 @@ open System.IO
 open ElectroElephant.StreamHelpers
 open ElectroElephant.Common
 
+[<StructuralEquality;StructuralComparison>]
 type PartitionFetchResponseData =
   { partition_id : PartitionId
     offset : Offset
     metadata : Metadata
     error_code : ErrorCode}
 
+[<StructuralEquality;StructuralComparison>]
 type TopicFetchResponseData =
   { topic_name : TopicName
     partition_fetch_data : PartitionFetchResponseData list}
 
+[<StructuralEquality;StructuralComparison>]
 type OffsetFetchResponse =
   { topic_offset_data : TopicFetchResponseData list }
 

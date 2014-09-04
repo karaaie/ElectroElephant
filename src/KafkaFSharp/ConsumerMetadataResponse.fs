@@ -4,7 +4,7 @@ open System.IO
 open ElectroElephant.Common
 open ElectroElephant.StreamHelpers
 
-
+[<StructuralEquality;StructuralComparison>]
 type ConsumerMetadataResponse =
   { error_code        : ErrorCode 
     coordinator_id    : CoordinatorId
