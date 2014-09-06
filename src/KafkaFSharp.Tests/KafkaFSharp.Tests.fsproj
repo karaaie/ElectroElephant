@@ -61,6 +61,7 @@
     <Compile Include="OffsetRequestTests.fs" />
     <Compile Include="OffsetFetchRequestTests.fs" />
     <Compile Include="OffsetCommitRequestTests.fs" />
+    <Compile Include="MessageTests.fs" />
     <Compile Include="compression_tests.fs" />
     <Compile Include="decompression_tests.fs" />
     <Compile Include="encoding_tests.fs" />

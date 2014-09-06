@@ -15,7 +15,7 @@ open ElectroElephant.Common
 //   Message { 
 //   Compression = Snappy, 
 //   Value = MessageSet of N Messages, each message is uncompressed in this set.} 
-type Compression =
-  | None of MessageAttribute
-  | GZIP of MessageAttribute
-  | Snappy of MessageAttribute
+type Compression = 
+  | None    = 0
+  | GZIP    = 1
+  | Snappy  = 2

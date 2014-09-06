@@ -29,6 +29,19 @@ let NullStringIndicator = -1s
 
 type MemoryStream with
   
+  /// Reads a byte from the stream
+  member this.read_byte() : int8 = 
+    let bytes = Array.zeroCreate 1
+    this.Read(bytes, 0, 1) |> ignore
+    bytes |> (List.ofArray
+              >> List.head
+              >> int8)
+  
+  /// Writes a byte to the stream
+  member this.write_byte (b : int8) = 
+    let byte_arr = [ byte b ] |> Array.ofList
+    this.Write(byte_arr, 0, 1)
+  
   /// <summary>
   ///  Reads a int16 from the stream
   /// </summary>
@@ -196,3 +209,17 @@ let read_array<'a> (stream : MemoryStream) (deserialize_fun : MemoryStream -> 'a
   let num = stream.read_int32<ArraySize>()
   [ for i in 1..num do
       yield deserialize_fun stream ]
+
+let write_array<'a> (stream : MemoryStream) (items : 'a list) (serialize_fun : MemoryStream -> 'a -> unit) = 
+  stream.write_int<ArraySize> items.Length
+  items |> List.iter (serialize_fun stream)
+
+let read_byte_array (stream : MemoryStream) = 
+  let size = stream.read_int32<ByteArraySize>()
+  let arr = Array.zeroCreate size
+  stream.Read(arr, 0, size) |> ignore
+  arr
+
+let write_byte_array (stream : MemoryStream) (arr : byte []) = 
+  stream.write_int<ByteArraySize> arr.Length
+  stream.Write(arr, 0, arr.Length)
