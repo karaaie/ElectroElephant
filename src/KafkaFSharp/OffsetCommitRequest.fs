@@ -46,21 +46,11 @@ let private deserialize_partition_offset (stream : MemoryStream) =
     timestamp = stream.read_int64<Time>()
     metadata = stream.read_str<Metadata>() }
 
-let private deserialize_partition_offsets (stream : MemoryStream) = 
-  let num = stream.read_int32<ArraySize>()
-  [ for i in 1..num do
-      yield deserialize_partition_offset stream ]
-
 let private deserialize_topic_offset (stream : MemoryStream) = 
   { topic_name = stream.read_str<StringSize>()
-    partition_offset_commit = deserialize_partition_offsets stream }
-
-let private deserialize_topic_offsets (stream : MemoryStream) = 
-  let num = stream.read_int32<ArraySize>()
-  [ for i in 1..num do
-      yield deserialize_topic_offset stream ]
+    partition_offset_commit = read_array<PartitionOffsetCommit> stream deserialize_partition_offset }
 
 /// deserializes a OffsetCommitRequest from the given stream
 let deserialize (stream : MemoryStream) = 
   { consumer_group = stream.read_str<StringSize>()
-    topic_offset_commit = deserialize_topic_offsets stream }
+    topic_offset_commit = read_array<TopicOffsetCommit> stream deserialize_topic_offset }

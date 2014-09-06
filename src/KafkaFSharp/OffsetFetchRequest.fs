@@ -28,12 +28,7 @@ let private deserialize_topic_offset (stream : MemoryStream) =
   { topic_name = stream.read_str<StringSize>()
     partitions = stream.read_int32_list<ArraySize, PartitionId>() }
 
-let private deserialize_topic_offsets (stream : MemoryStream) = 
-  let num = stream.read_int32<ArraySize>()
-  [ for i in 1..num do
-      yield deserialize_topic_offset stream ]
-
 /// Deserializes a OffsetFetchRequest from the given stream
 let deserialize (stream : MemoryStream) = 
   { consumer_group = stream.read_str<StringSize>()
-    topic_offset_data = deserialize_topic_offsets stream }
+    topic_offset_data = read_array<TopicOffsetFetch> stream deserialize_topic_offset }

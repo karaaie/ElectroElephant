@@ -1,58 +1,51 @@
 ﻿module ElectroElephant.MetadataResponse
 
-open System.IO
-
 open ElectroElephant.Common
 open ElectroElephant.StreamHelpers
+open System.IO
 
-
-
-[<StructuralEquality;StructuralComparison>] 
-type Broker =
+[<StructuralEquality; StructuralComparison>]
+type Broker = 
   { node_id : NodeId
-    host    : Hostname
-    port    : Port }
+    host : Hostname
+    port : Port }
 
-[<StructuralEquality;StructuralComparison>] 
+[<StructuralEquality; StructuralComparison>]
 type PartitionMetadata = 
   { error_code : ErrorCode
-
     id : PartitionId
-
     // The node id for the kafka broker currently acting as leader for this 
     // partition. If no leader exists because we are in 
     // the middle of a leader election this id will be -1.
     leader : LeaderId
-
     // The set of alive nodes that currently acts as slaves for the leader for this partition.
     replicas : ReplicaId list
-
     //The set subset of the replicas that are "caught up" to the leader
     isr : Isr list }
 
-[<StructuralEquality;StructuralComparison>]
-type TopicMetadata =
-  { error_code  : ErrorCode
-    name        : TopicName
-    partitions  : PartitionMetadata list } 
+[<StructuralEquality; StructuralComparison>]
+type TopicMetadata = 
+  { error_code : ErrorCode
+    name : TopicName
+    partitions : PartitionMetadata list }
 
-[<StructuralEquality;StructuralComparison>]
-type MetadataResponse =
-  { brokers         : Broker list
+[<StructuralEquality; StructuralComparison>]
+type MetadataResponse = 
+  { brokers : Broker list
     topic_metadatas : TopicMetadata list }
 
-let private serialize_broker (stream : MemoryStream) broker =
-  stream.write_int<NodeId>(broker.node_id)
-  stream.write_str<StringSize>(broker.host)
-  stream.write_int<Port>(broker.port)
+let private serialize_broker (stream : MemoryStream) broker = 
+  stream.write_int<NodeId> (broker.node_id)
+  stream.write_str<StringSize> (broker.host)
+  stream.write_int<Port> (broker.port)
 
-let private serialize_partition (stream : MemoryStream) (partition : PartitionMetadata) =
+let private serialize_partition (stream : MemoryStream) (partition : PartitionMetadata) = 
   stream.write_int<ErrorCode> partition.error_code
   stream.write_int<LeaderId> partition.leader
   stream.write_int_list<ByteArraySize, ReplicaId> partition.replicas
   stream.write_int_list<ByteArraySize, Isr> partition.isr
 
-let private serialize_topic (stream : MemoryStream) topic =
+let private serialize_topic (stream : MemoryStream) topic = 
   stream.write_int<ErrorCode> topic.error_code
   stream.write_str<StringSize> topic.name
   topic.partitions |> List.iter (serialize_partition stream)
@@ -63,45 +56,33 @@ let private serialize_topic (stream : MemoryStream) topic =
 /// </summary>
 /// <param name="meta_resp">MetadataResponse to be serialized</param>
 /// <param name="stream">stream to write serialization to</param>
-let serialize meta_resp (stream : MemoryStream) =
+let serialize meta_resp (stream : MemoryStream) = 
   stream.write_int<ArraySize> meta_resp.brokers.Length
   meta_resp.brokers |> List.iter (serialize_broker stream)
   stream.write_int<ArraySize> meta_resp.topic_metadatas.Length
   meta_resp.topic_metadatas |> List.iter (serialize_topic stream)
 
-let private  deserialize_broker (stream : MemoryStream) =
+let private deserialize_broker (stream : MemoryStream) = 
   { node_id = stream.read_int32<NodeId>()
     host = stream.read_str<StringSize>()
     port = stream.read_int32<Port>() }
 
-let private deserialize_brokers (stream : MemoryStream) =
-  let num_brokers = stream.read_int32<ArraySize>()
-  [for i in 1..num_brokers do yield deserialize_broker stream]
+let private deserialize_partition_metadata (stream : MemoryStream) = 
+  { error_code = stream.read_int16<ErrorCode>()
+    id = stream.read_int32<PartitionId>()
+    leader = stream.read_int32<LeaderId>()
+    replicas = stream.read_int32_list<ArraySize, ReplicaId>()
+    isr = stream.read_int32_list<ArraySize, Isr>() }
 
-let private deserialize_partition_metadata (stream : MemoryStream) =
-  { error_code  = stream.read_int16<ErrorCode>()
-    id          = stream.read_int32<PartitionId> ()
-    leader      = stream.read_int32<LeaderId>()
-    replicas    = stream.read_int32_list<ArraySize, ReplicaId>()
-    isr         = stream.read_int32_list<ArraySize, Isr>() }
-
-let private deserialize_partition_metadatas (stream : MemoryStream) =
-  let num_partitions = stream.read_int32<ArraySize>()
-  [for i in 1..num_partitions do yield deserialize_partition_metadata stream]
-
-let private deserialize_topic_metadata (stream : MemoryStream) =
+let private deserialize_topic_metadata (stream : MemoryStream) = 
   { error_code = stream.read_int16<ErrorCode>()
     name = stream.read_str<StringSize>()
-    partitions = deserialize_partition_metadatas stream }
-
-let private deserialize_topics_metadatas (stream : MemoryStream) =
-  let num_topics = stream.read_int32<ArraySize>()
-  [for i in 1..num_topics do yield deserialize_topic_metadata stream]
+    partitions = read_array<PartitionMetadata> stream deserialize_partition_metadata }
 
 /// <summary>
 ///  Reads a Metadata Response from the given stream
 /// </summary>
 /// <param name="stream">stream containing a metadata response</param>
-let deserialize (stream : MemoryStream) : MetadataResponse =
-  { brokers = deserialize_brokers stream
-    topic_metadatas = deserialize_topics_metadatas stream }
+let deserialize (stream : MemoryStream) : MetadataResponse = 
+  { brokers = read_array<Broker> stream deserialize_broker
+    topic_metadatas = read_array<TopicMetadata> stream deserialize_topic_metadata }
