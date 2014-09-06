@@ -1,10 +1,10 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="KafkaFSharp.Tests\StreamWrapperHelper.fs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="KafkaFSharp/OffsetFetchRequest.fs">
     <Files>
-      <File FileName="KafkaFSharp\CompressionNew.fs" Line="1" Column="1" />
-      <File FileName="KafkaFSharp\Common.fs" Line="1" Column="1" />
-      <File FileName="KafkaFSharp.Tests\StreamWrapperHelper.fs" Line="17" Column="17" />
+      <File FileName="KafkaFSharp/ProduceResponse.fs" Line="1" Column="1" />
+      <File FileName="KafkaFSharp/ConsumerMetadataRequest.fs" Line="3" Column="3" />
+      <File FileName="KafkaFSharp/OffsetFetchRequest.fs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

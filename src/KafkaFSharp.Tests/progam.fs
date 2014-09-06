@@ -3,5 +3,4 @@
 open Fuchu
 
 [<EntryPoint>]
-let main args =
-  defaultMainThisAssembly args
+let main args = defaultMainThisAssembly args
