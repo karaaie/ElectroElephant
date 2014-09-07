@@ -3,6 +3,7 @@
 open ElectroElephant.Common
 open ElectroElephant.OffsetFetchRequest
 open ElectroElephant.Tests.StreamWrapperHelper
+open FsCheck
 open Fuchu
 
 let topic_offsetB = 
@@ -21,4 +22,8 @@ let offset_req =
 let tests = 
   testList "" [ testCase "Serialized and Deserialized should be equal" <| fun _ -> 
                   let result = stream_wrapper<OffsetFetchRequest> offset_req serialize deserialize
-                  Assert.Equal("equal", offset_req, result) ]
+                  Assert.Equal("equal", offset_req, result)
+                testCase "FsCheck test" <| fun _ -> 
+                  let msg_set_fs (msg_set : OffsetFetchRequest) = 
+                    stream_wrapper<OffsetFetchRequest> msg_set serialize deserialize = msg_set
+                  Check.QuickThrowOnFailure msg_set_fs ]
