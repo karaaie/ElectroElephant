@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>KafkaFSharp</RootNamespace>
+    <RootNamespace>ElectroElephant</RootNamespace>
     <AssemblyName>KafkaFSharp</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Name>KafkaFSharp</Name>

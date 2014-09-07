@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>KafkaFSharp.Tests</RootNamespace>
+    <RootNamespace>ElectroElephant.Tests</RootNamespace>
     <AssemblyName>KafkaFSharp.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Name>KafkaFSharp.Tests</Name>
@@ -73,9 +73,9 @@
     <Compile Include="progam.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\KafkaFSharp\KafkaFSharp.fsproj">
-      <Name>KafkaFSharp</Name>
+    <ProjectReference Include="..\KafkaFSharp\ElectroElephant.fsproj">
       <Project>{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}</Project>
+      <Name>ElectroElephant</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

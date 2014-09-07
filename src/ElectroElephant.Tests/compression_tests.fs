@@ -1,4 +1,4 @@
-﻿module FsharpKafka.Tests.Compression
+﻿module ElectroElephant.Tests.Compression
 
 open FsCheck
 open Fuchu
