@@ -12,11 +12,12 @@ type BrokerConfig =
 let tcp_client (conf : BrokerConfig) = new TcpClient(conf.host, conf.port)
 let socket (cl : TcpClient) = cl.Client
 
-let setup_broker_conn = 
+let setup_broker_conn() = 
   let conf = 
     { host = "127.0.0.1"
       port = 1234 }
   tcp_client conf |> socket
+//  tcp_client conf 
 //let send_data 
 //  ()
 //let send_req (req : Request) callback =
