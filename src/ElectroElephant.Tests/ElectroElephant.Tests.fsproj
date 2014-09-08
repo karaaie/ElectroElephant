@@ -67,13 +67,15 @@
     <Compile Include="OffsetRequestTests.fs" />
     <Compile Include="OffsetFetchRequestTests.fs" />
     <Compile Include="OffsetCommitRequestTests.fs" />
+    <Compile Include="RequestTests.fs">
+    </Compile>
     <Compile Include="MessageTests.fs" />
     <Compile Include="compression_tests.fs" />
     <Compile Include="decompression_tests.fs" />
     <Compile Include="progam.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\KafkaFSharp\ElectroElephant.fsproj">
+    <ProjectReference Include="..\ElectroElephant\ElectroElephant.fsproj">
       <Project>{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}</Project>
       <Name>ElectroElephant</Name>
     </ProjectReference>
@@ -89,4 +91,16 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <TextStylePolicy TabWidth="2" IndentWidth="2" inheritsSet="VisualStudio" inheritsScope="text/plain" scope="text/x-fsharp" />
+          <FSharpFormattingPolicy scope="text/x-fsharp">
+            <DefaultFormat IndentOnTryWith="True" ReorderOpenDeclaration="True" SpaceAfterComma="True" SpaceAfterSemicolon="True" SpaceAroundDelimiter="True" SpaceBeforeArgument="True" SpaceBeforeColon="True" SemicolonAtEndOfLine="False" />
+          </FSharpFormattingPolicy>
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
 </Project>
