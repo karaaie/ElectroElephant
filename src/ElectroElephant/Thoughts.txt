@@ -1,0 +1,3 @@
+﻿
+How to run a kafka cluster locally.
+http://wurstmeister.github.io/kafka-docker/
