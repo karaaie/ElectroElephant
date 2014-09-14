@@ -1,17 +1,31 @@
 ﻿module KafkaFSharp.Model
 
-type Message  =
-  { magic        : byte
-    compression  : byte
-    checksum     : byte []
-    payload      : byte []
-    offset       : uint64
-    payload_size : uint32 }
 
-let message_equal msg1 msg2 : bool =
-  msg1.magic = msg2.magic 
-    && msg1.compression = msg2.compression
-    && msg1.checksum = msg2.checksum
-    && msg1.payload = msg2.payload
-    && msg1.offset = msg2.offset
-    && msg1.payload_size = msg2.payload_size
+open System.IO
+open System.Net.Sockets
+
+open ElectroElephant.Common
+open ElectroElephant.Response
+
+type RecieveState =
+   {  /// The socket which we read from.
+      socket : Socket
+
+      /// This buffer will contain the buffered data from the TCP socket.
+      buffer : byte[]
+
+      /// The size of the message, so we know when to stop reading.
+      msg_size : MessageSize
+
+      /// To keep track of how far we've read.
+      mutable total_read_bytes : int32
+
+      /// a callback which we can send the deserialized object to
+      callback : Response -> unit
+
+      /// the correlation_id set when sending the request to the server
+      corr_id : CorrelationId
+
+      /// This stream is where we store the body of our response and will be given
+      /// to the corresponding Response Serializer when we've read everything we need.
+      stream : MemoryStream }

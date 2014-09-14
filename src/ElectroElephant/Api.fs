@@ -18,7 +18,6 @@ open Logary
 
 let logger = Logging.getCurrentLogger()
 
-
 /// This should be configurable at some point.
 let read_buffer_size = 1024
 
@@ -29,14 +28,6 @@ let mutable correlation_id = 0
 let next_correlation_id () =
   correlation_id <- correlation_id + 1
   correlation_id
-
-
-
-type TransitMetadata<'a> = 
-  { /// the correlation id, this is how a request is mapped to a response
-    correlation_id : int32
-    /// Callback that should be called whenever we get a response to our request
-    callback : 'a -> unit }
 
 /// This map will contain all the correlation IDs and the corresponding API which was 
 /// called. This will make it easier to deserialize the request.
@@ -59,7 +50,11 @@ let api_key (req_t : RequestTypes) =
   | RequestTypes.OffsetFetch _ -> int16 ApiKeys.OffsetFetchRequest
 
 
-let transmission_state (result : IAsyncResult) =
+/// <summary>
+///  This is the callback used while sending data to a kafka broker
+/// </summary>
+/// <param name="result"></param>
+let private transmission_state (result : IAsyncResult) =
   try
     let socket_info = result.AsyncState :?> Socket
     let bytes_sent = socket_info.EndSend(result)
@@ -70,12 +65,11 @@ let transmission_state (result : IAsyncResult) =
     /// this needs much more error handling, we need to be able to handle the following:
     /// Leader for partition changed  -> attempt to rebuild metadata
     /// Broker down                   -> attempt to rebuild metadata
+    /// too large datasize            -> nothing we can do than log it as an error
     /// General Transmission error    -> do a retry
     | ex -> Log.errorStr "failed when sending data" |> Log.setExn ex |> Log.log logger
 
-
-
-let rec receive_response_payload (result : IAsyncResult) =
+let rec private receive_response_payload (result : IAsyncResult) =
   try
     let state = result.AsyncState :?> RecieveState
     let bytes_received = end_receive state result
@@ -85,27 +79,33 @@ let rec receive_response_payload (result : IAsyncResult) =
       // TODO: Some sort of error handling
       ()
     else
-
       // update how far we've read
       state.total_read_bytes <- state.total_read_bytes + bytes_received
-
       // write the current buffer to the stream.
       state.stream.Write(state.buffer, 0, bytes_received)
+
+      if state.msg_size = state.total_read_bytes then
+        //we have all the data we need in order to deserialize the response.
+        let api_key = correlatation_map.[state.corr_id]
+        //deserialize the entire response
+        let resp = Response.deserialize api_key state.stream
+        //fire the callback.
+        state.callback resp
+      else
+        ()
+
 
       let remaining_data_size = 
         match ( state.msg_size - state.total_read_bytes ) with
         // This is the case when we have looots of data to read still.
         // so lets attempt to fill our buffer.
         | x when x >= state.buffer.Length -> state.buffer.Length
-
         // this happens when we have a small message or are at the end of the current message
         // so we only read the remaning bytes.
         | x when x < state.buffer.Length -> x
+        | _ -> failwith "shouldn't happen"
 
-        // This shouldn't happen.
-        | _ -> 0 
-
-      begin_receive state remaining_data_size receive_response_payload |> ignore
+      begin_receive state remaining_data_size receive_response_payload
 
   with
     | ex -> Log.errorStr "failed while reading data, this needs to be handled." |> Log.log logger
@@ -113,7 +113,7 @@ let rec receive_response_payload (result : IAsyncResult) =
 
 /// this method handles the initial response from the kafka broker. 
 /// it grabs the size of the response so we know how much more we need to read.
-let receive_response_size (result : IAsyncResult) =
+let private receive_response_size (result : IAsyncResult) =
   try
     let state = result.AsyncState :?> RecieveState
     let bytes_received = state.socket.EndReceive(result)
@@ -127,11 +127,7 @@ let receive_response_size (result : IAsyncResult) =
       // lets find out the size
       let payload_size = BitConverter.ToInt32(state.buffer, 0)
       let payload_state = { state with msg_size = payload_size ; total_read_bytes = 0 }
-
-      /// The error handling is done in the callback.
-      state.socket.BeginReceive(state.buffer, 0, state.buffer.Length, SocketFlags.None, new AsyncCallback(receive_response_payload), payload_state) |> ignore
-      begin_receive state 
-
+      begin_receive payload_state payload_size receive_response_payload
   with
     | ex -> Log.errorStr "failed while reading data, this needs to be handled." |> Log.log logger
 
@@ -159,7 +155,7 @@ let receive_response_size (result : IAsyncResult) =
 /// <param name="topic">which topic the message is for</param>
 /// <param name="key">the key decides which partition the message is for</param>
 /// <param name="value">what we want to publish</param>
-let publish_msg<'ResponseType, 'RequestType> (req_t : RequestTypes) (callback : 'ResponseType -> unit) 
+let send_request<'RequestType> (req_t : RequestTypes) (callback : Response -> unit) 
     (topic : string) (key : string) (value : 'RequestType) : unit = 
 
   //B. 
@@ -187,13 +183,16 @@ let publish_msg<'ResponseType, 'RequestType> (req_t : RequestTypes) (callback : 
   conn.BeginSend(payload, 0, payload.Length, SocketFlags.None, new AsyncCallback(transmission_state), conn) |> ignore
 
   // Start reading the response, we need the first four bytes in order to know how long the response will be.
-  let msg_size = Array.zeroCreate 4
-  // ignore the result here as well. Let the callback handle errors
-  conn.BeginReceive(msg_size,0, msg_size.Length, SocketFlags.None, new AsyncCallback(receive_response_size), conn) |> ignore
+  let rec_state =
+    { socket = conn
+      buffer = Array.zeroCreate read_buffer_size
+      total_read_bytes = 0
+      msg_size = sizeof<MessageSize>
+      callback = callback
+      corr_id = current_correlation_id
+      stream = new MemoryStream() }
 
-
-
-
+  begin_receive rec_state rec_state.msg_size receive_response_size
 
 //let recieve_loop =
 //  let conn = setup_broker_conn()
