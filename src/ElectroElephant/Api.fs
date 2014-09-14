@@ -7,6 +7,8 @@ open ElectroElephant.Response
 open Microsoft.FSharp.Core.Operators
 open System.Collections.Generic
 
+open ElectroElephant.SocketHelpers
+
 open System.Threading
 open System
 open System.IO
@@ -28,25 +30,7 @@ let next_correlation_id () =
   correlation_id <- correlation_id + 1
   correlation_id
 
-type RecieveState =
-   {  /// The socket which we read from.
-      socket : Socket
 
-      /// This buffer will contain the buffered data from the TCP socket.
-      buffer : byte[]
-
-      /// The size of the message, so we know when to stop reading.
-      msg_size : int32
-
-      /// To keep track of how far we've read.
-      mutable total_read_bytes : int32
-
-      /// a callback which we can send the deserialized object to
-      callback : Response -> unit
-
-      /// This stream is where we store the body of our response and will be given
-      /// to the corresponding Response Serializer when we've read everything we need.
-      stream : MemoryStream }
 
 type TransitMetadata<'a> = 
   { /// the correlation id, this is how a request is mapped to a response
@@ -94,7 +78,7 @@ let transmission_state (result : IAsyncResult) =
 let rec receive_response_payload (result : IAsyncResult) =
   try
     let state = result.AsyncState :?> RecieveState
-    let bytes_received = state.socket.EndReceive(result)
+    let bytes_received = end_receive state result
 
     if bytes_received = 0 then
       //something went horribly wrong
@@ -121,7 +105,8 @@ let rec receive_response_payload (result : IAsyncResult) =
         // This shouldn't happen.
         | _ -> 0 
 
-      state.socket.BeginReceive(state.buffer, 0, remaining_data_size, SocketFlags.None, new AsyncCallback(receive_response_payload), state) |> ignore
+      begin_receive state remaining_data_size receive_response_payload |> ignore
+
   with
     | ex -> Log.errorStr "failed while reading data, this needs to be handled." |> Log.log logger
 
@@ -145,6 +130,7 @@ let receive_response_size (result : IAsyncResult) =
 
       /// The error handling is done in the callback.
       state.socket.BeginReceive(state.buffer, 0, state.buffer.Length, SocketFlags.None, new AsyncCallback(receive_response_payload), payload_state) |> ignore
+      begin_receive state 
 
   with
     | ex -> Log.errorStr "failed while reading data, this needs to be handled." |> Log.log logger
