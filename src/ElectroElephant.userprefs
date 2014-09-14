@@ -12,7 +12,7 @@
       <File FileName="ElectroElephant.Tests/OffsetCommitRequestTests.fs" Line="1" Column="1" />
       <File FileName="ElectroElephant/Crc32.fs" Line="1" Column="1" />
       <File FileName="ElectroElephant/Response.fs" Line="1" Column="1" />
-      <File FileName="ElectroElephant/Api.fs" Line="1" Column="1" />
+      <File FileName="ElectroElephant/Api.fs" Line="31" Column="31" />
       <File FileName="ElectroElephant/Common.fs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
