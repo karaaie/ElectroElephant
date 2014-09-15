@@ -1,3 +1,10 @@
 ﻿
 How to run a kafka cluster locally.
 http://wurstmeister.github.io/kafka-docker/
+
+
+http://codebetter.com/gregyoung/2007/06/18/async-sockets-and-buffer-management/
+http://en.wikibooks.org/wiki/F_Sharp_Programming/Async_Workflows
+http://en.wikibooks.org/wiki/F_Sharp_Programming/MailboxProcessor
+http://www.fssnip.net/6c
+http://www.fssnip.net/tags/MailboxProcessor

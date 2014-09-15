@@ -88,6 +88,7 @@
     <Compile Include="BrokerConnection.fs" />
     <Compile Include="SocketHelpers.fs" />
     <Compile Include="Api.fs" />
+    <Compile Include="Client.fs" />
     <None Include="packages.config" />
     <None Include="Thoughts.txt" />
   </ItemGroup>

@@ -149,8 +149,7 @@ let private receive_response_size (result : IAsyncResult) =
 ///     A. wrap the specific request in to a format which kafka understands
 ///     B. Set up the correlation id and callback which can be called out-of-band when the response arrives
 ///     C. Serialize the message
-///     D. Figure out which Broker the message should go to
-///     E. Transmitt the message to the correct broker
+///     E. Transmitt the message to the broker
 ///     F. Check the transmission result, did it succeed or fail?
 ///        depending on what response we get we might have to rebuild our metadata set
 ///        or simply try to retransmitt the message.
@@ -168,9 +167,10 @@ let private receive_response_size (result : IAsyncResult) =
 /// <param name="topic">which topic the message is for</param>
 /// <param name="key">the key decides which partition the message is for</param>
 /// <param name="value">what we want to publish</param>
-let send_request<'RequestType> (req_t : RequestTypes) 
-    (callback : Response -> unit) (topic : string) (key : string) 
-    (value : 'RequestType) : unit = 
+let private send_request<'RequestType> 
+    (req_t : RequestTypes) 
+    (callback : Response -> unit)
+    (socket : Socket) = 
   //B. 
   let current_correlation_id = next_correlation_id()
   
@@ -181,9 +181,7 @@ let send_request<'RequestType> (req_t : RequestTypes)
       correlation_id = current_correlation_id
       client_id = get_client_id
       request_type = req_t }
-  
-  //D. grab the connection to the current broker
-  let conn = setup_broker_conn()
+
   //C. serialize the envelop
   use stream = new MemoryStream()
   ElectroElephant.Request.serialize req stream
@@ -191,31 +189,57 @@ let send_request<'RequestType> (req_t : RequestTypes)
   //E. transmitt the request
   // lets ignore the async result since that object will be sent to the async callback, we'll handle errors
   // and other stuff there instead.
-  conn.BeginSend
+  socket.BeginSend
     (payload, 0, payload.Length, SocketFlags.None, 
-     new AsyncCallback(transmission_state), conn) |> ignore
+     new AsyncCallback(transmission_state), socket) |> ignore
   // Start reading the response, we need the first four bytes in order to know how long the response will be.
   let rec_state = 
-    { socket = conn
+    { socket = socket
       buffer = Array.zeroCreate read_buffer_size
       total_read_bytes = 0
       msg_size = sizeof<MessageSize>
       callback = callback
       corr_id = current_correlation_id
       stream = new MemoryStream() }
+
   begin_receive rec_state rec_state.msg_size receive_response_size
-//let recieve_loop =
-//  let conn = setup_broker_conn()
-//
-//  while true do
-//    if conn.Available > 0 then
-//      //http://codebetter.com/gregyoung/2007/06/18/async-sockets-and-buffer-management/
-//      //http://en.wikibooks.org/wiki/F_Sharp_Programming/Async_Workflows
-//      //http://en.wikibooks.org/wiki/F_Sharp_Programming/MailboxProcessor
-//      //http://www.fssnip.net/6c
-//      //http://www.fssnip.net/tags/MailboxProcessor
-//     ()
-//    else
-//      Thread.Sleep(100)
-//  
-//
+
+let do_produce 
+    (topic : string)
+    (key : string) 
+    (value : byte list)  = ()
+
+let do_fetch
+    (topic : string)
+    (key : string) 
+    (offset : Offset)  = ()
+
+let do_offset_commit = ()
+
+let do_offset_fetch = ()
+
+let do_offset = ()
+
+open ElectroElephant.MetadataRequest
+open ElectroElephant.MetadataResponse
+open System.Threading
+
+
+let private metadata_callback_wrapper 
+  (orginial : MetadataResponse -> unit)
+  : Response -> unit =
+  ()
+
+let do_metadata_request 
+  (sockets : TcpClient list) 
+  (topics : string list option)
+  (callback : MetadataResponse -> unit) =
+  let meta_req = 
+    match topics with
+    | Some tps -> RequestTypes.Metadata({ topic_names = tps})
+    | None -> RequestTypes.Metadata ({ topic_names = []})
+  
+  sockets 
+    |> List.iter ( fun sock -> send_request<MetadataRequest> meta_req callback sock.Client)
+  
+  ()
