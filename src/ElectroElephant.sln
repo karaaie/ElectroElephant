@@ -5,6 +5,8 @@ Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "ElectroElephant", "ElectroE
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "ElectroElephant.Tests", "ElectroElephant.Tests\ElectroElephant.Tests.fsproj", "{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}"
 EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "ElectroElephan.Tests.Integration", "ElectroElephan.Tests.Integration\ElectroElephan.Tests.Integration.fsproj", "{28F6FF98-CAE9-4875-BE5E-112BBD4BA0F8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,13 +17,17 @@ Global
 		{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{22EFDB8B-89DE-48AD-90EA-D1E78FA2BBD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28F6FF98-CAE9-4875-BE5E-112BBD4BA0F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28F6FF98-CAE9-4875-BE5E-112BBD4BA0F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28F6FF98-CAE9-4875-BE5E-112BBD4BA0F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28F6FF98-CAE9-4875-BE5E-112BBD4BA0F8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{431CAEA9-8D95-4A5E-A3BD-09CED1DC9F1E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = ElectroElephant.Tests\ElectroElephant.Tests.fsproj
+		StartupItem = ElectroElephan.Tests.Integration\ElectroElephan.Tests.Integration.fsproj
 		Policies = $0
 		$0.TextStylePolicy = $1
 		$1.FileWidth = 120
