@@ -5,7 +5,7 @@ open ElectroElephant.Response
 open System.IO
 open System.Net.Sockets
 
-type RecieveState = 
+type ReceiveState = 
   { /// The socket which we read from.
     socket : Socket
     /// This buffer will contain the buffered data from the TCP socket.
@@ -21,3 +21,13 @@ type RecieveState =
     /// This stream is where we store the body of our response and will be given
     /// to the corresponding Response Serializer when we've read everything we need.
     stream : MemoryStream }
+
+type SendState =
+  { /// The socket currently used to send the data
+    /// which should already be connected to a specific
+    /// kafka broker.
+    socket : Socket
+    /// The data that we wish to send to a kafka broker
+    payload : byte[]
+    /// how much of the payload that is sent
+    mutable sent_bytes : int32}

@@ -50,12 +50,20 @@ let api_key (req_t : RequestTypes) =
 ///  This is the callback used while sending data to a kafka broker
 /// </summary>
 /// <param name="result"></param>
-let private transmission_state (result : IAsyncResult) = 
+let rec private send_callback (result : IAsyncResult) = 
   try 
-    let socket_info = result.AsyncState :?> Socket
-    let bytes_sent = socket_info.EndSend(result)
-    ("electroelephant.bytes.sent", float bytes_sent) ||> Log.incrBy logger
-    LogLine.Create "successfully sent a message to kafka" |> Log.log logger
+    let state = result.AsyncState :?> SendState
+    let bytes_sent = end_send state result
+    state.sent_bytes <- state.sent_bytes + bytes_sent
+
+    if state.sent_bytes >= state.payload.Length then
+      /// we're done
+      ("electroelephant.bytes.sent", float bytes_sent) ||> Log.incrBy logger
+      LogLine.Create "successfully sent a message to kafka" |> Log.log logger
+    else
+      // not all data is sent to the socket, continue sending data
+      begin_send state send_callback |> ignore
+
   with /// TODO
        /// this needs much more error handling, we need to be able to handle the following:
        /// Leader for partition changed  -> attempt to rebuild metadata
@@ -103,7 +111,7 @@ let kafka_broker_shutdown_socket =
 /// and handles errors that might occur.
 let rec private receive_response_payload (result : IAsyncResult) = 
   try 
-    let state = result.AsyncState :?> RecieveState
+    let state = result.AsyncState :?> ReceiveState
     let bytes_received = end_receive state result
     if bytes_received = 0 then kafka_broker_shutdown_socket
     else 
@@ -112,9 +120,10 @@ let rec private receive_response_payload (result : IAsyncResult) =
       // write the current buffer to the stream.
       state.stream.Write(state.buffer, 0, bytes_received)
       if state.msg_size = state.total_read_bytes then finish_receive state
-      else begin_receive state (next_read_size state) receive_response_payload
+      else begin_receive state (next_read_size state) receive_response_payload |> ignore
   with ex -> 
-    Log.errorStr "failed while reading data, this needs to be handled." 
+    Log.errorStr "failed while reading data, this needs to be handled."
+    |> Log.setExn ex
     |> Log.log logger
 
 let handle_socket_error (ex : SocketException) = 
@@ -128,7 +137,7 @@ let handle_socket_error (ex : SocketException) =
 /// it grabs the size of the response so we know how much more we need to read.
 let private receive_response_size (result : IAsyncResult) = 
   try 
-    let state = result.AsyncState :?> RecieveState
+    let state = result.AsyncState :?> ReceiveState
     let bytes_received = end_receive state result
     if bytes_received = 0 then kafka_broker_shutdown_socket
     else 
@@ -139,7 +148,7 @@ let private receive_response_size (result : IAsyncResult) =
       let payload_state = 
         { state with msg_size = payload_size
                      total_read_bytes = 0 }
-      begin_receive payload_state payload_size receive_response_payload
+      begin_receive payload_state payload_size receive_response_payload |> ignore
   with
     | :? SocketException as ex -> handle_socket_error ex
     | ex -> Log.errorStr "failed while reading data" |> Log.log logger
@@ -185,13 +194,15 @@ let private send_request<'RequestType>
   //C. serialize the envelop
   use stream = new MemoryStream()
   ElectroElephant.Request.serialize req stream
-  let payload = stream.ToArray()
+  
+  let send_state =
+    { socket = socket
+      payload = stream.ToArray()
+      sent_bytes = 0}
   //E. transmitt the request
   // lets ignore the async result since that object will be sent to the async callback, we'll handle errors
   // and other stuff there instead.
-  socket.BeginSend
-    (payload, 0, payload.Length, SocketFlags.None, 
-     new AsyncCallback(transmission_state), socket) |> ignore
+  begin_send send_state send_callback |> ignore
   // Start reading the response, we need the first four bytes in order to know how long the response will be.
   let rec_state = 
     { socket = socket
@@ -222,24 +233,34 @@ let do_offset = ()
 
 open ElectroElephant.MetadataRequest
 open ElectroElephant.MetadataResponse
-open System.Threading
 
-
+/// <summary>
+///   wraps the metaresponse callback so the api will be a bit cleaner.
+/// </summary>
+/// <param name="orginial">the originial callback</param>
+/// <param name="resp">the response gotten from the server</param>
 let private metadata_callback_wrapper 
-  (orginial : MetadataResponse -> unit)
-  : Response -> unit =
-  ()
+  (orginial : MetadataResponse -> unit) (resp : Response) =
+
+  match resp.response_type with
+  | ResponseTypes.Metadata md -> orginial md
+  | wrong ->  LogLine.Create "expected a metadata response, but got another type of response"
+              |> Log.setData "incorrect response" wrong
+              |> logger.Log
 
 let do_metadata_request 
-  (sockets : TcpClient list) 
+  (hostname : string)
+  (port : int)
   (topics : string list option)
   (callback : MetadataResponse -> unit) =
+
+  //any specific topic that we want to constraint us to?
   let meta_req = 
     match topics with
     | Some tps -> RequestTypes.Metadata({ topic_names = tps})
     | None -> RequestTypes.Metadata ({ topic_names = []})
+
+  let socket = new TcpClient(hostname, port)
+  let result = (send_request<MetadataRequest> meta_req (metadata_callback_wrapper callback) socket.Client)
+  result.AsyncWaitHandle.WaitOne()
   
-  sockets 
-    |> List.iter ( fun sock -> send_request<MetadataRequest> meta_req callback sock.Client)
-  
-  ()
