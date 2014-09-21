@@ -14,6 +14,8 @@ open System.Net.Sockets
 /// <param name="remaining_bytes"></param>
 /// <param name="callback"></param>
 let begin_receive (state : ReceiveState) remaining_bytes callback = 
+  let async_args = new SocketAsyncEventArgs()
+  state.socket.ReceiveAsync(new SocketAsyncEventArgs())
   state.socket.BeginReceive
     (state.buffer, 0, remaining_bytes, SocketFlags.None, 
      new AsyncCallback(callback), state)

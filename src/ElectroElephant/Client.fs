@@ -8,7 +8,7 @@ open Logary.Rule
 open Logary.Targets
 open System.Net.Sockets
 
-let logger = Logging.getCurrentLogger()
+let logger = Logging.getLoggerByName "EE.Client"
 
 type Broker = 
   { /// hostname of a broker
@@ -38,7 +38,7 @@ let private populate_kafka_metadata (meta : MetadataResponse) =
 ///   contains information about which kafka brokers are available and where
 ///   they are located.
 /// </summary>
-let bootstrap (conf : BootstrapConf) = 
+let bootstrap (conf : BootstrapConf) : Async<MetadataResponse> = 
   use logary = 
     withLogary' "ElectroElephant" 
       (withTargets [ Console.create Console.empty "console"
@@ -47,5 +47,9 @@ let bootstrap (conf : BootstrapConf) =
                       Rule.createForTarget "debugger" ])
   
   let head = conf.brokers |> List.head
-  do_metadata_request head.hostname head.port conf.topics 
+
+  do_metadata_request 
+    head.hostname 
+    head.port 
+    conf.topics 
     populate_kafka_metadata

@@ -1,25 +1,37 @@
 ﻿module ElectroElephant.Tests.Integration.Metadata
 
+open ElectroElephant.Common
+open ElectroElephant.MetadataResponse
 open ElectroElephant.Client
 open Fuchu
 
-//type Broker =
-//    /// hostname of a broker
-//  { hostname : string
-//    /// the port of the broker
-//    port : int}
-//
-//type BootstrapConf =
-//  { /// list of brokers that we can attempt to contact
-//    /// inorder to get metadata
-//    brokers : Broker list
-//    /// these are the topics that we want to constraint us to
-//    topics : string list option}
 let broker_conf = 
   { brokers = 
       [ { hostname = "localhost"
           port = 9092 } ]
     topics = None }
 
+/// This probably have to be adjusted from time to time.
+let expected_metadata =
+  { brokers = [ { node_id = 0
+                  host = "192.168.1.48"
+                  port = 9092}]
+    topic_metadatas = [ { error_code = 0s
+                          name = "yellowcars"
+                          partitions = [ {  error_code = 0s
+                                            id = 0
+                                            leader = 0
+                                            replicas = [0]
+                                            isr = [0]}
+                                            ]
+                          } ]
+  }
+
+
 [<Tests>]
-let tests = testList "" [ testCase "attempt to get metadata" <| fun _ -> bootstrap broker_conf |> ignore ]
+let tests = 
+  testList "a series of integration tests" [ 
+    testCase "attempt to get metadata" <| fun _ -> 
+      let resp = bootstrap broker_conf |> Async.RunSynchronously
+      Assert.Equal("should be equal", expected_metadata, resp)
+  ]

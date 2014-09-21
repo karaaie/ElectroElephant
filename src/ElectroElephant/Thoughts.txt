@@ -5,6 +5,10 @@ http://wurstmeister.github.io/kafka-docker/
 How to start kafka on your machine
 https://kafka.apache.org/08/quickstart.html
 
+
+Good example of how to work with async expressions in F#
+http://tomasp.net/blog/csharp-fsharp-async-intro.aspx/
+
 http://codebetter.com/gregyoung/2007/06/18/async-sockets-and-buffer-management/
 http://en.wikibooks.org/wiki/F_Sharp_Programming/Async_Workflows
 http://en.wikibooks.org/wiki/F_Sharp_Programming/MailboxProcessor
