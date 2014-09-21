@@ -8,6 +8,7 @@ open ElectroElephant.Model
 open ElectroElephant.Request
 open ElectroElephant.Response
 open ElectroElephant.SocketHelpers
+open ElectroElephant.StreamHelpers
 open Logary
 open Microsoft.FSharp.Core.Operators
 open System
@@ -16,7 +17,7 @@ open System.IO
 open System.Net.Sockets
 open System.Threading
 
-let logger = Logging.getCurrentLogger()
+let logger = Logging.getLoggerByName("EE.API")
 
 /// This should be configurable at some point.
 let read_buffer_size = 1024
@@ -40,13 +41,13 @@ let get_client_id = "kamils client"
 /// Correlate an request type with an ApiKey
 let api_key (req_t : RequestTypes) = 
   match req_t with
-  | RequestTypes.Metadata _ -> int16 ApiKeys.MetadataRequest
-  | RequestTypes.Produce _ -> int16 ApiKeys.ProduceRequest
-  | RequestTypes.Fetch _ -> int16 ApiKeys.FetchRequest
-  | RequestTypes.Offsets _ -> int16 ApiKeys.OffsetRequest
-  | RequestTypes.ConsumerMetadata _ -> int16 ApiKeys.ConsumerMetadataRequest
-  | RequestTypes.OffsetCommit _ -> int16 ApiKeys.OffsetCommitRequest
-  | RequestTypes.OffsetFetch _ -> int16 ApiKeys.OffsetFetchRequest
+  | RequestTypes.Metadata _ ->  ApiKeys.MetadataRequest
+  | RequestTypes.Produce _ -> ApiKeys.ProduceRequest
+  | RequestTypes.Fetch _ ->  ApiKeys.FetchRequest
+  | RequestTypes.Offsets _ -> ApiKeys.OffsetRequest
+  | RequestTypes.ConsumerMetadata _ -> ApiKeys.ConsumerMetadataRequest
+  | RequestTypes.OffsetCommit _ ->  ApiKeys.OffsetCommitRequest
+  | RequestTypes.OffsetFetch _ -> ApiKeys.OffsetFetchRequest
 
 /// <summary>
 ///  This is the callback used while sending data to a kafka broker
@@ -94,7 +95,8 @@ let private finish_receive state =
   //we have all the data we need in order to deserialize the response.
   let api_key = correlatation_map.[state.corr_id]
   //deserialize the entire response
-  let resp = Response.deserialize api_key state.stream
+  use memStream = new MemoryStream(state.stream.ToArray())
+  let resp = Response.deserialize api_key memStream
   //fire the callback.
   state.callback resp
 
@@ -144,15 +146,27 @@ let private receive_response_size (result : IAsyncResult) =
   try 
     Logger.info logger "receive response size called"
     let state = result.AsyncState :?> ReceiveState
+
+    LogLine.info "data stuck in buffer 1"
+      |> LogLine.setData "read buffer" state.socket.Available
+      |> Logger.log logger
+
     let bytes_received = end_receive state result
+
+    LogLine.info "data stuck in buffer 2"
+      |> LogLine.setData "read buffer" state.socket.Available
+      |> LogLine.setData "read bytes" bytes_received
+      |> Logger.log logger
+
     if bytes_received = 0 then kafka_broker_shutdown_socket state
     else 
       // the stream should contain atleast the size and probably some of the response
       // lets find out the size
-      let payload_size = BitConverter.ToInt32(state.buffer, 0)
+      let payload_size = BitConverter.ToInt32(state.buffer.[..3] |> correct_endianess , 0)
       LogLine.info "got msg size info"
       |> LogLine.setData "size" payload_size
       |> Logger.log logger
+
       let payload_state = 
         { state with msg_size = payload_size
                      total_read_bytes = 0 }
@@ -194,11 +208,13 @@ let private send_request<'RequestType> (req_t : RequestTypes)
   |> Logger.log logger
   //B. 
   let current_correlation_id = next_correlation_id()
-  
+
+
+  correlatation_map.Add(current_correlation_id, api_key req_t)
   //A. 
   let req = 
     { api_version = 0s
-      api_key = api_key req_t
+      api_key = int16 (api_key req_t)
       correlation_id = current_correlation_id
       client_id = get_client_id
       request_type = req_t }
@@ -218,14 +234,16 @@ let private send_request<'RequestType> (req_t : RequestTypes)
       sent_bytes = 0 }
 
   //kafka expects to get the size of the request first
+
+  let payload_size = correct_endianess <| BitConverter.GetBytes(payload_state.payload.Length)
   let msg_size_state =
       { socket = socket
-        payload =       Array.rev (BitConverter.GetBytes(int32 payload_state.payload.Length))
+        payload =  payload_size
         sent_bytes = 0 }
 
   LogLine.info "msg size info"
   |> LogLine.setData "normal size" payload_state.payload.Length
-  |> LogLine.setData "converted size" (BitConverter.ToInt32(msg_size_state.payload,0))
+  |> LogLine.setData "converted size" (BitConverter.ToInt32(msg_size_state.payload |> correct_endianess,0))
   |> LogLine.setData "is Little Endian" BitConverter.IsLittleEndian
   |> Logger.log logger
   //E. transmitt the request
@@ -289,7 +307,7 @@ let do_metadata_request (hostname : string) (port : int)
 
   Logger.info logger "waiting for the response.."
   Thread.Sleep(TimeSpan.FromSeconds 5.)
-  LogLine.info "data stuck in buffer"
+  LogLine.info "data stuck in buffer 3"
   |> LogLine.setData "read buffer" socket.Available
   |> Logger.log logger
   Thread.Sleep(TimeSpan.FromSeconds 5.)

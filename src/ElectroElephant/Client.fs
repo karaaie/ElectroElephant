@@ -29,7 +29,7 @@ type BootstrapConf =
 /// <param name="meta"></param>
 let private populate_kafka_metadata (meta : MetadataResponse) = 
   LogLine.info "MetaResponse arrived! This is the content"
-  |> LogLine.setData "metadata" meta
+  |> LogLine.setData "metadata" (sprintf "%A" meta)
   |> Logger.log logger
 
 /// <summary>
