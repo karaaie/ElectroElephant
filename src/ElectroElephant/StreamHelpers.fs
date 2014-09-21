@@ -27,8 +27,18 @@ open System.Text
 //grammars below we will show an array of a structure foo as [foo].
 let NullStringIndicator = -1s
 
+
+/// This method ensures that everything we transmitt is in
+/// big endian order and when we receive data from kafka we must
+/// possibly convert it back to little endianess
+let correct_endianess (bytes : byte[]) : byte [] =
+  match BitConverter.IsLittleEndian with
+  | true -> Array.rev bytes
+  | false -> bytes
+
+
 type MemoryStream with
-  
+
   /// Reads a byte from the stream
   member this.read_byte() : int8 = 
     let bytes = Array.zeroCreate 1
@@ -52,7 +62,7 @@ type MemoryStream with
     let size = sizeof<'IntType>
     let bytes = Array.zeroCreate sizeof<'IntType>
     this.Read(bytes, 0, size) |> ignore
-    BitConverter.ToInt16(bytes, 0)
+    BitConverter.ToInt16(bytes |> correct_endianess, 0)
   
   /// <summary>
   ///  Reads a int32 from the stream
@@ -64,8 +74,20 @@ type MemoryStream with
     let size = sizeof<'IntType>
     let bytes = Array.zeroCreate sizeof<'IntType>
     this.Read(bytes, 0, size) |> ignore
-    BitConverter.ToInt32(bytes, 0)
-  
+    BitConverter.ToInt32(bytes |> correct_endianess, 0)
+
+  /// <summary>
+  ///  Reads a int64 from the stream
+  /// </summary>
+  /// <param name="stream">the stream to read from</param>
+  member this.read_int64<'IntType>() = 
+    if sizeof<'IntType> <> sizeof<int64> then 
+      failwithf "tried to read int32 but typed it with %d byte int" sizeof<'IntType>
+    let size = sizeof<'IntType>
+    let bytes = Array.zeroCreate sizeof<'IntType>
+    this.Read(bytes, 0, size) |> ignore
+    BitConverter.ToInt64(bytes |> correct_endianess, 0)
+
   member this.read_int16_list<'ArrSize, 'IntType>() = 
     if sizeof<'IntType> <> sizeof<int16> then 
       failwithf "tried to read int16 list but typed it with %d byte int" sizeof<'IntType>
@@ -86,19 +108,7 @@ type MemoryStream with
     let num_ints = this.read_int32<'ArrSize>()
     [ for i in 1..num_ints do
         yield this.read_int64<'IntType>() ]
-  
-  /// <summary>
-  ///  Reads a int64 from the stream
-  /// </summary>
-  /// <param name="stream">the stream to read from</param>
-  member this.read_int64<'IntType>() = 
-    if sizeof<'IntType> <> sizeof<int64> then 
-      failwithf "tried to read int32 but typed it with %d byte int" sizeof<'IntType>
-    let size = sizeof<'IntType>
-    let bytes = Array.zeroCreate sizeof<'IntType>
-    this.Read(bytes, 0, size) |> ignore
-    BitConverter.ToInt64(bytes, 0)
-  
+
   /// <summary>
   /// Writes a int16 to the stream, the given type will be compared
   /// to int16, if they don't match an error will be thrown.
@@ -107,7 +117,7 @@ type MemoryStream with
   member this.write_int<'IntType> (i : int16) = 
     if sizeof<'IntType> <> sizeof<int16> then 
       failwithf "tried to write int16 but typed it with %d byte int" sizeof<'IntType>
-    this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
+    this.Write(i |> BitConverter.GetBytes |> correct_endianess, 0, sizeof<'IntType>)
   
   /// <summary>
   /// Writes a int32 to the stream, the given type will be compared
@@ -117,7 +127,7 @@ type MemoryStream with
   member this.write_int<'IntType> (i : int32) = 
     if sizeof<'IntType> <> sizeof<int32> then 
       failwithf "tried to write int32 but typed it with %d byte int" sizeof<'IntType>
-    this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
+    this.Write(i |> BitConverter.GetBytes |> correct_endianess, 0, sizeof<'IntType>)
   
   /// <summary>
   /// Writes a int64 to the stream, the given type will be compared
@@ -127,7 +137,7 @@ type MemoryStream with
   member this.write_int<'IntType> (i : int64) = 
     if sizeof<'IntType> <> sizeof<int64> then 
       failwithf "tried to write int64 but typed it with %d byte int" sizeof<'IntType>
-    this.Write(i |> BitConverter.GetBytes, 0, sizeof<'IntType>)
+    this.Write(i |> BitConverter.GetBytes |> correct_endianess, 0, sizeof<'IntType>)
   
   /// <summary>
   ///  Writes a list of int16 to the stream. It writes the size of the array
