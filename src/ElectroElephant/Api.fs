@@ -160,7 +160,9 @@ let private receive_response_size (result : IAsyncResult) =
       |> ignore
   with
     | :? SocketException as ex -> handle_socket_error ex
-    | ex -> Logger.error logger "failed while reading data"
+    | ex -> LogLine.error "failed while reading data" 
+            |> LogLine.setExn ex
+            |> Logger.log logger
 
 /// <summary>
 ///   Mission: 
@@ -200,6 +202,7 @@ let private send_request<'RequestType> (req_t : RequestTypes)
       correlation_id = current_correlation_id
       client_id = get_client_id
       request_type = req_t }
+
   LogLine.debug "socket info"
   |> LogLine.setData "connected" socket.Connected
   |> Logger.log logger
@@ -207,14 +210,29 @@ let private send_request<'RequestType> (req_t : RequestTypes)
   //C. serialize the envelop
   use stream = new MemoryStream()
   ElectroElephant.Request.serialize req stream
-  let send_state = 
+
+  //this is the request
+  let payload_state = 
     { socket = socket
       payload = stream.ToArray()
       sent_bytes = 0 }
+
+  //kafka expects to get the size of the request first
+  let msg_size_state =
+      { socket = socket
+        payload =       Array.rev (BitConverter.GetBytes(int32 payload_state.payload.Length))
+        sent_bytes = 0 }
+
+  LogLine.info "msg size info"
+  |> LogLine.setData "normal size" payload_state.payload.Length
+  |> LogLine.setData "converted size" (BitConverter.ToInt32(msg_size_state.payload,0))
+  |> LogLine.setData "is Little Endian" BitConverter.IsLittleEndian
+  |> Logger.log logger
   //E. transmitt the request
   // lets ignore the async result since that object will be sent to the async callback, we'll handle errors
   // and other stuff there instead.
-  begin_send send_state send_callback |> ignore
+  begin_send msg_size_state send_callback |> ignore
+  begin_send payload_state send_callback |> ignore
   Logger.info logger "begin send done"
   // Start reading the response, we need the first four bytes in order to know how long the response will be.
   let rec_state = 
@@ -268,6 +286,7 @@ let do_metadata_request (hostname : string) (port : int)
   let result = 
     (send_request<MetadataRequest> meta_req (metadata_callback_wrapper callback) 
        socket.Client)
+
   Logger.info logger "waiting for the response.."
   Thread.Sleep(TimeSpan.FromSeconds 5.)
   LogLine.info "data stuck in buffer"
