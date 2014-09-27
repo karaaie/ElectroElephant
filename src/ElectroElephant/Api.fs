@@ -74,15 +74,14 @@ let api_key (req_t : RequestTypes) =
 /// <param name="value">what we want to publish</param>
 let private send_request<'RequestType> (req_t : RequestTypes) (socket : Socket) : Async<Response> = 
     async {
-      LogLine.debug "meta req"
-      |> LogLine.setData "meta req" req_t
-      |> Logger.log logger
-      //B. 
+      Logger.info logger "send_request called"
+
       let current_correlation_id = next_correlation_id()
 
-
       correlatation_map.Add(current_correlation_id, api_key req_t)
-      //A. 
+
+
+      // SHOULD BE MOVE SOMEWHERE ELSE
       let req = 
         { api_version = 0s
           api_key = int16 (api_key req_t)
@@ -90,48 +89,36 @@ let private send_request<'RequestType> (req_t : RequestTypes) (socket : Socket) 
           client_id = get_client_id
           request_type = req_t }
 
-      LogLine.debug "socket info"
-      |> LogLine.setData "connected" socket.Connected
-      |> Logger.log logger
-
-      //C. serialize the envelop
+      // SERIALIZE THE PAYLOAD
       use stream = new MemoryStream()
       ElectroElephant.Request.serialize req stream
+      let serialized_request = stream.ToArray()
 
-      //this is the request
-      let payload_state = 
-        { socket = socket
-          payload = stream.ToArray()
-          sent_bytes = 0 }
+      // SEND MSG SIZE
+      Logger.info logger "sending request size"
+      let! bytes_sent_size = socket.AsyncSend (correct_endianess <| BitConverter.GetBytes(serialized_request.Length))
+      LogLine.debug "bytes sent" |> LogLine.setData "sent" bytes_sent_size |> logger.Log
 
-      //kafka expects to get the size of the request first
+      // SEND PAYLOAD
+      Logger.info logger "sending request"
+      let! bytes_sent_payload = socket.AsyncSend serialized_request
+      LogLine.debug "bytes sent" |> LogLine.setData "sent" bytes_sent_payload |> logger.Log
 
-      let payload_size = correct_endianess <| BitConverter.GetBytes(payload_state.payload.Length)
-      let msg_size_state =
-          { socket = socket
-            payload =  payload_size
-            sent_bytes = 0 }
-
-      do Logger.info logger "sending request size"
-      let! bytes_sent_size = socket.AsyncSend msg_size_state.payload
-      do LogLine.debug "bytes sent" |> LogLine.setData "sent" bytes_sent_size |> logger.Log
-
-      do Logger.info logger "sending request"
-      let! bytes_sent_payload = socket.AsyncSend payload_state.payload
-      do LogLine.debug "bytes sent" |> LogLine.setData "sent" bytes_sent_payload |> logger.Log
-
+      // RECEIVE PAYLOAD SIZE
       let size_buffer = Array.zeroCreate sizeof<int32>
-      let bytes_received_size = socket.AsyncReceive size_buffer
+      let! bytes_received_size = socket.AsyncReceive size_buffer
       LogLine.debug "bytes received" |> LogLine.setData "received" bytes_received_size |> logger.Log
-      let payload_size = BitConverter.ToInt32(size_buffer |> correct_endianess , 0)
+      let payload_size = BitConverter.ToInt32(size_buffer |> correct_endianess, 0)
+      LogLine.info "received response size " |> LogLine.setData "size" payload_size |> logger.Log
 
-      do LogLine.info "received response size " 
-        |> LogLine.setData "size" payload_size 
-        |> logger.Log
-
+      // RECEIVE PAYLOAD
       let resp_buffer = Array.zeroCreate payload_size
       let! response_bytes_received = socket.AsyncReceive resp_buffer 
-      LogLine.debug "bytes received" |> LogLine.setData "received" response_bytes_received |> logger.Log
+
+      // DESERIALIZE THE RESPONSE
+      LogLine.debug "bytes received" 
+        |> LogLine.setData "received" response_bytes_received
+        |> logger.Log
       return Response.deserialize (api_key req_t) (new MemoryStream(resp_buffer))
     }
 

@@ -5,6 +5,15 @@ http://wurstmeister.github.io/kafka-docker/
 How to start kafka on your machine
 https://kafka.apache.org/08/quickstart.html
 
+
+## CREATE TOPIC YELLOW CARS
+./bin/kafka-topics.sh --create --topic yellocars --zookeeper localhost:2181 --replication-factor 1 --partition 1
+
+## DESCRIBE ALL TOPICS
+./bin/kafka-topics.sh --describe --zookeeper localhost:2181
+
+##
+
 http://codebetter.com/gregyoung/2007/06/18/async-sockets-and-buffer-management/
 http://en.wikibooks.org/wiki/F_Sharp_Programming/Async_Workflows
 http://en.wikibooks.org/wiki/F_Sharp_Programming/MailboxProcessor

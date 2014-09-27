@@ -21,10 +21,16 @@ let broker_conf =
           port = 9092 } ]
     topics = None }
 
+
+/// IMPORTANT, if your running these tests against a local cluster then make sure that
+/// the cluster is started, and that you have created a atleast one topic. For some reason
+/// the kafka broker will claim it has no brokers until a topic is created.
 [<Tests>]
 let tests = 
-  testList "" [ 
+  testList "" [
     testCase "attempt to get metadata" <| fun _ -> 
       let resp = Async.RunSynchronously (bootstrap broker_conf)
-      Assert.Equal("",true, true)
+      printfn "%A" (resp.ToString())
+      Assert.Equal("should have one broker", 1, resp.brokers.Length)
+      Assert.Equal("should have one topic", 1, resp.topic_metadatas.Length)
    ]
