@@ -1,4 +1,4 @@
-*.userpref
+src/ElectroElephant.userprefs
 obj/
 *.suo
 packages/
