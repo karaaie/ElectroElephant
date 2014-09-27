@@ -23,14 +23,14 @@ type BootstrapConf =
     /// these are the topics that we want to constraint us to
     topics : string list option }
 
-/// <summary>
-///   Transforms the metadata response to something we can reuse for later requests.
-/// </summary>
-/// <param name="meta"></param>
-let private populate_kafka_metadata (meta : MetadataResponse) = 
-  LogLine.info "MetaResponse arrived! This is the content"
-  |> LogLine.setData "metadata" (sprintf "%A" meta)
-  |> Logger.log logger
+///// <summary>
+/////   Transforms the metadata response to something we can reuse for later requests.
+///// </summary>
+///// <param name="meta"></param>
+//let private populate_kafka_metadata (meta : MetadataResponse) = 
+//  LogLine.info "MetaResponse arrived! This is the content"
+//  |> LogLine.setData "metadata" (sprintf "%A" meta)
+//  |> Logger.log logger
 
 /// <summary>
 ///   Calls the the list of kafka brokers until it gets a response
@@ -38,14 +38,6 @@ let private populate_kafka_metadata (meta : MetadataResponse) =
 ///   contains information about which kafka brokers are available and where
 ///   they are located.
 /// </summary>
-let bootstrap (conf : BootstrapConf) = 
-  use logary = 
-    withLogary' "ElectroElephant" 
-      (withTargets [ Console.create Console.empty "console"
-                     Debugger.create Debugger.DebuggerConf.Default "debugger" ]
-       >> withRules [ Rule.createForTarget "console"
-                      Rule.createForTarget "debugger" ])
-  
+let bootstrap (conf : BootstrapConf) : Async<MetadataResponse> =
   let head = conf.brokers |> List.head
-  do_metadata_request head.hostname head.port conf.topics 
-    populate_kafka_metadata
+  do_metadata_request head.hostname head.port conf.topics

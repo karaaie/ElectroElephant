@@ -17,9 +17,14 @@ open Fuchu
 //    topics : string list option}
 let broker_conf = 
   { brokers = 
-      [ { hostname = "localhost"
+      [ { hostname = "192.168.1.48"
           port = 9092 } ]
     topics = None }
 
 [<Tests>]
-let tests = testList "" [ testCase "attempt to get metadata" <| fun _ -> bootstrap broker_conf |> ignore ]
+let tests = 
+  testList "" [ 
+    testCase "attempt to get metadata" <| fun _ -> 
+      let resp = Async.RunSynchronously (bootstrap broker_conf)
+      Assert.Equal("",true, true)
+   ]

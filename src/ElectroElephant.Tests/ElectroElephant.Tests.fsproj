@@ -31,8 +31,16 @@
     <DocumentationFile>bin\Release\KafkaFSharp.Tests.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Actor">
+      <HintPath>..\packages\FSharp.Actor-logary.2.0.0-alpha6\lib\net40\FSharp.Actor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Fuchu">
       <HintPath>..\packages\Fuchu.0.4.0.0\lib\Fuchu.dll</HintPath>
+    </Reference>
+    <Reference Include="Logary">
+      <HintPath>..\packages\Intelliplan.Logary.2.0.0-alpha6\lib\net40\Logary.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -65,12 +73,6 @@
     <Reference Include="Intelliplan.JsonNet.NodaTime">
       <HintPath>..\packages\Intelliplan.JsonNet.NodaTime.1.7.0\lib\net40\Intelliplan.JsonNet.NodaTime.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Actor">
-      <HintPath>..\packages\FSharp.Actor-logary.2.0.0-alpha5\lib\net40\FSharp.Actor.dll</HintPath>
-    </Reference>
-    <Reference Include="Logary">
-      <HintPath>..\packages\Intelliplan.Logary.2.0.0-alpha5\lib\net40\Logary.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Script.fsx" />
@@ -97,6 +99,7 @@
     <Compile Include="compression_tests.fs" />
     <Compile Include="decompression_tests.fs" />
     <Compile Include="progam.fs" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ElectroElephant\ElectroElephant.fsproj">

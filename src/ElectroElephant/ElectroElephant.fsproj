@@ -31,6 +31,14 @@
     <DocumentationFile>bin\Release\KafkaFSharp.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Actor">
+      <HintPath>..\packages\FSharp.Actor-logary.2.0.0-alpha6\lib\net40\FSharp.Actor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Logary">
+      <HintPath>..\packages\Intelliplan.Logary.2.0.0-alpha6\lib\net40\Logary.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.5.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -52,12 +60,6 @@
     </Reference>
     <Reference Include="Intelliplan.JsonNet.NodaTime">
       <HintPath>..\packages\Intelliplan.JsonNet.NodaTime.1.7.0\lib\net40\Intelliplan.JsonNet.NodaTime.dll</HintPath>
-    </Reference>
-    <Reference Include="FSharp.Actor">
-      <HintPath>..\packages\FSharp.Actor-logary.2.0.0-alpha5\lib\net40\FSharp.Actor.dll</HintPath>
-    </Reference>
-    <Reference Include="Logary">
-      <HintPath>..\packages\Intelliplan.Logary.2.0.0-alpha5\lib\net40\Logary.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -91,6 +93,7 @@
     <Compile Include="Client.fs" />
     <None Include="packages.config" />
     <None Include="Thoughts.txt" />
+    <Compile Include="SocketModule.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
