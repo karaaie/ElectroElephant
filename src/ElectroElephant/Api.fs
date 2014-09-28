@@ -30,10 +30,6 @@ let next_correlation_id() =
   correlation_id <- correlation_id + 1
   correlation_id
 
-/// This map will contain all the correlation IDs and the corresponding API which was 
-/// called. This will make it easier to deserialize the request.
-let correlatation_map = new Dictionary<CorrelationId, ApiKeys>()
-
 /// This clients sender ID, Should be configurable and correlate to the applications
 /// name/type w/e
 let get_client_id = "kamils client"
@@ -50,15 +46,7 @@ let api_key (req_t : RequestTypes) =
   | RequestTypes.OffsetFetch _ -> ApiKeys.OffsetFetchRequest
 
 /// <summary>
-///   Mission: 
-///     A. wrap the specific request in to a format which kafka understands
-///     B. Set up the correlation id and callback which can be called out-of-band when the response arrives
-///     C. Serialize the message
-///     E. Transmitt the message to the broker
-///     F. Check the transmission result, did it succeed or fail?
-///        depending on what response we get we might have to rebuild our metadata set
-///        or simply try to retransmitt the message.
-///     H. Do the BeginReceive.
+///  Sends a Request to a kafka broker and returns an async handle to the Response.
 ///  Premises:
 ///    = Outgoing requests will be buffered in the Socket layer because kafka only accepts one in-flight message at a time.
 ///      Implications/Simplifications:
@@ -77,9 +65,6 @@ let private send_request<'RequestType> (req_t : RequestTypes) (socket : Socket) 
       Logger.info logger "send_request called"
 
       let current_correlation_id = next_correlation_id()
-
-      correlatation_map.Add(current_correlation_id, api_key req_t)
-
 
       // SHOULD BE MOVE SOMEWHERE ELSE
       let req = 
@@ -140,13 +125,12 @@ let private unwrapp_metadata (resp : Response) =
       "expected a metadata response, but got another type of response"
     |> LogLine.setData "incorrect response" wrong
     |> Logger.log logger
-    failwith "wtf!"
+    failwith "got incorrect response type"
 
 let do_metadata_request 
     (hostname : string) 
     (port : int) 
     (topics : string list option) : Async<MetadataResponse> =
-
   async{
     //any specific topic that we want to constraint us to?
     let meta_req = 
@@ -157,11 +141,6 @@ let do_metadata_request
     Logger.info logger "starting connection"
 
     let socket = new TcpClient(hostname, port)
-
-    LogLine.debug "tcp client info"
-    |> LogLine.setData "host" hostname
-    |> LogLine.setData "port" port
-    |> Logger.log logger
 
     let! result = send_request<MetadataRequest> meta_req socket.Client
 

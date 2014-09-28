@@ -27,10 +27,9 @@ let broker_conf =
 /// the kafka broker will claim it has no brokers until a topic is created.
 [<Tests>]
 let tests = 
-  testList "" [
-    testCase "attempt to get metadata" <| fun _ -> 
+  testList "smoke tests" [
+    testCase "attempt to get metadata and verify we get something sane back." <| fun _ -> 
       let resp = Async.RunSynchronously (bootstrap broker_conf)
-      printfn "%A" (resp.ToString())
       Assert.Equal("should have one broker", 1, resp.brokers.Length)
       Assert.Equal("should have one topic", 1, resp.topic_metadatas.Length)
    ]

@@ -19,3 +19,56 @@ http://en.wikibooks.org/wiki/F_Sharp_Programming/Async_Workflows
 http://en.wikibooks.org/wiki/F_Sharp_Programming/MailboxProcessor
 http://www.fssnip.net/6c
 http://www.fssnip.net/tags/MailboxProcessor
+
+
+### Byt ut egen serializeringen till FsPicklers.
+http://www.nuget.org/packages/FsPickler/
+
+
+What do I want to achive?
+-> Elegant Error handling
+	Every publish request to the broker might fail.
+	Potential failure modes...
+	| ...Lost a connection to one of the brokers.
+	| ...Leader Changed for partition
+	| ...and Lots of more, See the Error codes class
+	-> failures can be handleded by reconstructing the metadata object
+		/// at some point we might need to handle in flight messages which gets lost when the metaobject
+		/// gets rebuilt.
+
+	   -> if that failes then that means that we lost connection to all the brokers.
+			At this point we might have to crash or atleast keep retrying for a while.
+		
+
+-> Id like the user to be un aware of the metaconf file in order to make it less mutable
+	and easier to replace if we need to rebuild it.
+	This could probably be done with the actor model. The loop it self does the error handling, rebuilding of the metadata file
+	and sending the requests.
+
+	How ever this doesn't account for callbacks, and other types of messages where we really care for the result.
+
+	We could however have a message type for each type of message that we want to send to what ever broker. Provide
+	a callback, all the data which is necessary and run the callback inside the actor. This might slow it down somewhat but it makes 
+	it easier to handle errors. The callback could for example throw an exception with the error code.. or something of the sort. Perhaps
+	the actor can do the unwrapping from Response to the specific ResponseType and examine the error code. The error code seems to be deep inside 
+	the specific response type.. so for the time being we can let the caller handle specific broker errors. The actor should only care for obvious errors
+	like lost connection or peer rest the connection (i.e. the message size was to large). Now we can neatly handle all the Socker errors in one thread
+	and act upon them from the same location.
+
+	Later on we can have a model where each broker connection is a actor in it self, this gives us the possibility to send messages in parallel.. 
+	This is a more complex model where we might need to reset sibling actors when we get an error.
+
+	actor
+		msg types [
+			common params:
+				// could possibly be async or not.. I haven't decided yet.
+				callback : ResponseType -> unit
+				topic name : string
+				partition id : int
+			produce, 
+			metadata, 
+			fetch, 
+			offset, 
+			ConsumerMetadata, 
+			offsetFetch, 
+			offsetCommit ]

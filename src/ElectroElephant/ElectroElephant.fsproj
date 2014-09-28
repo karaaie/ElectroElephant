@@ -32,7 +32,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="FSharp.Actor">
-      <HintPath>..\packages\FSharp.Actor-logary.2.0.0-alpha6\lib\net40\FSharp.Actor.dll</HintPath>
+      <HintPath>..\packages\FSharp.Actor.0.0.6-alpha\lib\FSharp.Actor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FsPickler">
+      <HintPath>..\packages\FsPickler.0.9.9\lib\net45\FsPickler.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Logary">
@@ -93,7 +97,6 @@
     <Compile Include="Client.fs" />
     <None Include="packages.config" />
     <None Include="Thoughts.txt" />
-    <Compile Include="SocketModule.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
