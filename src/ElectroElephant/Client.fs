@@ -12,9 +12,12 @@ let logger = Logging.getCurrentLogger()
 
 //Start and create the Actor System Host.
 ActorHost.Start()
-let system = ActorHost.CreateSystem "Electro Elephant Actor System"
 
+let system = 
+  ActorHost.CreateSystem("Electro Elephant Actor System").SubscribeEvents (fun (ae : ActorEvent) ->
+     Logger.info logger (sprintf "%A" ae))
 
+ 
 type Broker = 
   { /// hostname of a broker
     hostname : Hostname
@@ -34,48 +37,140 @@ type TopicPartition =
 
 /// this is the object which is passed around and contains all the information we
 /// need in order to publish messages.
-type MetadataConfig =
-  { topic_partition_map : Dictionary<TopicName, PartitionId list>
-    topic_broker_map : Dictionary<TopicPartition, TcpClient> }
+type ClientState =
+  { topic_to_partition            : Dictionary<TopicName, PartitionId list>
+    topic_partition_to_broker_id  : Dictionary<TopicPartition, NodeId>
+    broker_to_actor               : Dictionary<NodeId, IActor> }
 
 type SendAction =
-  | Bootstrap of BootstrapConf
-  | Send of byte []
+  | Bootstrap
+  | Publish of byte []
 
-let sender_actor (boot_conf : BootstrapConf) =
-  actor {
-    name "Sender Actor"
-    messageHandler (fun actor ->
-      let rec loop (meta_conf : MetadataConfig option) = async {
-        match meta_conf with
-        | Some cf ->
-                  //do call the send method.
-                  let head = boot_conf.brokers |> List.head
-                  do_metadata_request head.hostname head.port boot_conf.topics
-                  ()
-        | None -> 
-                  // do the bootstrap and send the conf as a state
-                  //return! loop (Some conf)
-                  return! loop None
+type BrokerAction =
+  | ProduceRequest
+  | FetchRequest
+  | OffsetRequest
+  | ConsumerMetadataRequest
+  | OffsetFetchRequest
+  | OffsetCommitRequest
 
-        let! msg = actor.Receive()
 
-        match msg.Message with
-        | Send msg -> ()
-
-        return! loop None
-      }
-      loop None
-    )
-  } |> system.SpawnActor
-
-//sender_actor <-- SendAction.Bootstrap
+type BrokerActorState =
+    /// This is the id of the broker according to kafka.
+  { node_id : NodeId
+    /// the hostname of the broker
+    hostname : Hostname
+    /// the port for the broker.
+    port : Port
+    /// the actual tcp client. Its set as an option so we can
+    /// lazy load it.
+    tcp_client : TcpClient option }
 
 /// <summary>
-///   Calls the the list of kafka brokers until it gets a response
-///   when it gets a response then it builds up a datastructure which
-///   contains information about which kafka brokers are available and where
-///   they are located.
+///  This type of actor is in charge of talking to one specific broker.
 /// </summary>
-let start (conf : BootstrapConf) =
-  (sender_actor conf) <-- SendAction.Bootstrap conf
+let private create_broker_actor state =
+  let actor_name = (sprintf "Broker Actor (node id = %d)" state.node_id)
+  actor {
+    name actor_name
+    messageHandler (fun actor ->
+      let rec loop (state : BrokerActorState) = async {
+        let! msg = actor.Receive()
+        match msg.Message with
+          | ProduceRequest
+          | FetchRequest
+          | OffsetRequest
+          | ConsumerMetadataRequest
+          | OffsetFetchRequest
+          | OffsetCommitRequest
+          | _ -> failwith "got something strange!"
+      }
+      loop state
+    )
+  } |> Actor.spawn actor_name
+
+
+let create_client (metadata : MetadataResponse)  : ClientState =
+  let client_state = 
+    { topic_to_partition = new Dictionary<TopicName, PartitionId list>()
+      topic_partition_to_broker_id = new Dictionary<TopicPartition, NodeId> ()
+      broker_to_actor = new Dictionary<NodeId, ActorRef> () }
+
+  /// create all broker actors
+  metadata.brokers 
+  |> List.iter (fun brker -> 
+      let actor = 
+        { node_id = brker.node_id
+          hostname = brker.host
+          port = brker.port
+          tcp_client = None } 
+        |> create_broker_actor
+      /// map the node id of the broker to an actor
+      client_state.broker_to_actor.Add(brker.node_id, actor))
+
+  /// map all topic names to a partition id lists
+  metadata.topic_metadatas
+  |> List.iter (fun topic ->
+      let topic_name = topic.name
+      let partition_ids = topic.partitions |> List.map (fun part -> part.id)
+      client_state.topic_to_partition.Add(topic_name, partition_ids)
+      )
+
+  /// given a topic name and a partition id 
+  /// then the map should return the id of the broker
+  /// which is currently leader
+  metadata.topic_metadatas
+  |> List.iter (fun topic ->
+      topic.partitions |> List.iter (fun partition ->
+        let node_id = partition.leader
+        let topic_partition = 
+          { topic = topic.name
+            partition = partition.id }
+        client_state.topic_partition_to_broker_id.Add(topic_partition, node_id)
+      )
+    )
+
+  client_state
+
+type MasterActorActions =
+  /// bootstrap the master actor with a list of hosts
+  /// and a callback, if you wish, which will give you a 
+  /// copy of the client state.
+  | Bootstrap of ( BootstrapConf * ((ClientState -> unit) option))
+
+let master_actor = 
+  let actor_name = "Master Actor"
+  actor {
+    name actor_name
+    messageHandler (fun actor ->
+      let rec loop (state : ClientState option) =
+        async {
+          let! msg = actor.Receive()
+          match msg.Message with
+          | Bootstrap(conf, clb) -> 
+            let head = conf.brokers |> List.head
+            let! resp = do_metadata_request head.hostname head.port conf.topics
+            let s = create_client resp
+
+            match clb with
+            | Some c -> c s
+            | None -> ()
+            return! loop (Some s)
+          | _ -> failwith "got something strange!"
+        }
+      loop None
+    )
+  } |> Actor.spawn actor_name
+
+/// <summary>
+///  This method starts and inits ElectroElephant. 
+///  supply it with a initial list of brokers
+///  and it will then try to bootstrap from them.
+///  The callback can be used to get a the client state 
+/// </summary>
+/// <param name="boot_conf"></param>
+/// <param name="clb"></param>
+let bootstrap (boot_conf : BootstrapConf) (clb : (ClientState -> unit) option) =
+  let master = master_actor 
+  master_actor <-- Bootstrap(boot_conf, clb)
+  master

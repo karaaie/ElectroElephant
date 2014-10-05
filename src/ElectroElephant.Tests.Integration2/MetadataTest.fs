@@ -1,7 +1,11 @@
 ﻿module ElectroElephant.Tests.Integration.Metadata
 
 open ElectroElephant.Client
+open ElectroElephant.MetadataResponse
 open Fuchu
+
+open System
+open System.Threading
 
 //type Broker =
 //    /// hostname of a broker
@@ -17,7 +21,7 @@ open Fuchu
 //    topics : string list option}
 let broker_conf = 
   { brokers = 
-      [ { hostname = "192.168.1.48"
+      [ { hostname = "192.168.1.89"
           port = 9092 } ]
     topics = None }
 
@@ -29,7 +33,15 @@ let broker_conf =
 let tests = 
   testList "smoke tests" [
     testCase "attempt to get metadata and verify we get something sane back." <| fun _ -> 
-      let resp = Async.RunSynchronously (bootstrap broker_conf)
-      Assert.Equal("should have one broker", 1, resp.brokers.Length)
-      Assert.Equal("should have one topic", 1, resp.topic_metadatas.Length)
+      let reset_event = new ManualResetEvent(false)
+
+      let callback (resp : MetadataResponse) =
+        Assert.Equal("should have one broker", 1, resp.brokers.Length)
+        Assert.Equal("should have one topic", 1, resp.topic_metadatas.Length)
+        Assert.Equal("should contain a yellow car topic", true ,
+          resp.topic_metadatas |> List.exists (fun t -> t.name.Contains "yellocars"))
+        reset_event.Set() |> ignore
+
+      Async.RunSynchronously (bootstrap broker_conf callback)
+      reset_event.WaitOne() |> ignore
    ]

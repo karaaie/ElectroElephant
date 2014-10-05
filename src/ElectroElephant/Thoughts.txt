@@ -6,6 +6,12 @@ How to start kafka on your machine
 https://kafka.apache.org/08/quickstart.html
 
 
+## START ZOOKEEPER
+
+
+./bin/zookeeper-server-start.sh config/zookeeper.properties
+
+
 ## CREATE TOPIC YELLOW CARS
 ./bin/kafka-topics.sh --create --topic yellocars --zookeeper localhost:2181 --replication-factor 1 --partition 1
 
