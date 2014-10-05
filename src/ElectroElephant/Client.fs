@@ -40,7 +40,7 @@ type TopicPartition =
 type ClientState =
   { topic_to_partition            : Dictionary<TopicName, PartitionId list>
     topic_partition_to_broker_id  : Dictionary<TopicPartition, NodeId>
-    broker_to_actor               : Dictionary<NodeId, IActor> }
+    broker_to_actor               : Dictionary<NodeId, FSharp.Actor.actorRef> }
 
 type SendAction =
   | Bootstrap
@@ -94,7 +94,7 @@ let create_client (metadata : MetadataResponse)  : ClientState =
   let client_state = 
     { topic_to_partition = new Dictionary<TopicName, PartitionId list>()
       topic_partition_to_broker_id = new Dictionary<TopicPartition, NodeId> ()
-      broker_to_actor = new Dictionary<NodeId, ActorRef> () }
+      broker_to_actor = new Dictionary<NodeId, FSharp.Actor.actorRef> () }
 
   /// create all broker actors
   metadata.brokers 

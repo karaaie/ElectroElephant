@@ -7,21 +7,9 @@ open Fuchu
 open System
 open System.Threading
 
-//type Broker =
-//    /// hostname of a broker
-//  { hostname : string
-//    /// the port of the broker
-//    port : int}
-//
-//type BootstrapConf =
-//  { /// list of brokers that we can attempt to contact
-//    /// inorder to get metadata
-//    brokers : Broker list
-//    /// these are the topics that we want to constraint us to
-//    topics : string list option}
 let broker_conf = 
   { brokers = 
-      [ { hostname = "192.168.1.89"
+      [ { hostname = "192.168.1.96"
           port = 9092 } ]
     topics = None }
 
@@ -35,13 +23,13 @@ let tests =
     testCase "attempt to get metadata and verify we get something sane back." <| fun _ -> 
       let reset_event = new ManualResetEvent(false)
 
-      let callback (resp : MetadataResponse) =
-        Assert.Equal("should have one broker", 1, resp.brokers.Length)
-        Assert.Equal("should have one topic", 1, resp.topic_metadatas.Length)
+      let callback (state : ClientState) =
+        Assert.Equal("should have one broker", 1, state.broker_to_actor.Count)
+        Assert.Equal("should have one topic", 1, state.topic_to_partition.Count)
         Assert.Equal("should contain a yellow car topic", true ,
-          resp.topic_metadatas |> List.exists (fun t -> t.name.Contains "yellocars"))
+          state.topic_to_partition.ContainsKey "yellocars")
         reset_event.Set() |> ignore
 
-      Async.RunSynchronously (bootstrap broker_conf callback)
+      bootstrap broker_conf (Some callback) |> ignore
       reset_event.WaitOne() |> ignore
    ]

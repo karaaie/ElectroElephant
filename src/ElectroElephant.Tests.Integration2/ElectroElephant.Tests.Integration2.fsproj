@@ -44,8 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Actor">
-      <HintPath>..\packages\FSharp.Actor-logary.2.0.0-alpha6\lib\net40\FSharp.Actor.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>\\psf\Home\dev\ElectroElephant\src\packages\FSharp.Actor.0.0.6-alpha\lib\FSharp.Actor.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core">
       <HintPath>..\packages\FSharp.Core.3.0.0.2\lib\net40\FSharp.Core.dll</HintPath>
