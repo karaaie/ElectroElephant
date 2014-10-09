@@ -44,10 +44,15 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Actor">
-      <HintPath>\\psf\Home\dev\ElectroElephant\src\packages\FSharp.Actor.0.0.6-alpha\lib\FSharp.Actor.dll</HintPath>
+      <HintPath>..\packages\FSharp.Actor.0.0.6-alpha\lib\FSharp.Actor.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Core">
       <HintPath>..\packages\FSharp.Core.3.0.0.2\lib\net40\FSharp.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FsPickler">
+      <HintPath>..\packages\FsPickler.0.9.9\lib\net45\FsPickler.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Fuchu">
