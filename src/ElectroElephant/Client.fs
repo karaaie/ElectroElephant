@@ -47,15 +47,14 @@ type SendAction =
   | Publish of byte []
 
 type BrokerAction =
-  | ProduceRequest
+  | Publish of ( byte[] * TopicName * PartitionId )
   | FetchRequest
   | OffsetRequest
   | ConsumerMetadataRequest
   | OffsetFetchRequest
   | OffsetCommitRequest
 
-
-type BrokerActorState =
+type private BrokerActorState =
     /// This is the id of the broker according to kafka.
   { node_id : NodeId
     /// the hostname of the broker
@@ -77,7 +76,8 @@ let private create_broker_actor state =
       let rec loop (state : BrokerActorState) = async {
         let! msg = actor.Receive()
         match msg.Message with
-          | ProduceRequest
+          | Publish(msg, topic, partition) ->
+            ()
           | FetchRequest
           | OffsetRequest
           | ConsumerMetadataRequest
@@ -90,7 +90,7 @@ let private create_broker_actor state =
   } |> Actor.spawn actor_name
 
 
-let create_client (metadata : MetadataResponse)  : ClientState =
+let private create_client (metadata : MetadataResponse)  : ClientState =
   let client_state = 
     { topic_to_partition = new Dictionary<TopicName, PartitionId list>()
       topic_partition_to_broker_id = new Dictionary<TopicPartition, NodeId> ()
@@ -132,13 +132,14 @@ let create_client (metadata : MetadataResponse)  : ClientState =
 
   client_state
 
-type MasterActorActions =
+type private MasterActorActions =
   /// bootstrap the master actor with a list of hosts
   /// and a callback, if you wish, which will give you a 
   /// copy of the client state.
-  | Bootstrap of ( BootstrapConf * ((ClientState -> unit) option))
+  | Bootstrap of ( BootstrapConf * ((ClientState -> unit) option) )
+  | Publish of ( byte[] * TopicName * PartitionId )
 
-let master_actor = 
+let private master_actor () = 
   let actor_name = "Master Actor"
   actor {
     name actor_name
@@ -156,6 +157,13 @@ let master_actor =
             | Some c -> c s
             | None -> ()
             return! loop (Some s)
+          | Publish(msg, topic, partition) ->
+            if state.IsNone then
+              failwith "you must bootstrap the master actor before publishing messages"
+            else
+              let broker_id = state.Value.topic_partition_to_broker_id.[{topic = topic ; partition = partition}]
+              let actor = state.Value.broker_to_actor.[broker_id]
+              actor <-- Publish(msg, topic, partition)
           | _ -> failwith "got something strange!"
         }
       loop None
@@ -171,6 +179,6 @@ let master_actor =
 /// <param name="boot_conf"></param>
 /// <param name="clb"></param>
 let bootstrap (boot_conf : BootstrapConf) (clb : (ClientState -> unit) option) =
-  let master = master_actor 
-  master_actor <-- Bootstrap(boot_conf, clb)
+  let master = master_actor ()
+  master <-- Bootstrap(boot_conf, clb)
   master
