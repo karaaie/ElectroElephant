@@ -2,7 +2,9 @@
 
 open ElectroElephant.Common
 open ElectroElephant.CompressionNew
+open ElectroElephant.Crc32
 open ElectroElephant.StreamHelpers
+open ElectroElephant
 open System.IO
 
 type Message = 
@@ -31,6 +33,22 @@ type MessageSet =
     // know the offset and can fill in any value here it likes.
     offset : Offset
     messages : Message list }
+
+
+/// creates a simple msg, we never compress a single message
+/// because the compression rate would be very low.
+let private create_simple_msg ( msg : byte [] ) : Message =
+  { crc = ElectroElephant.Crc32.crc32 msg
+    magic_byte = Common.MessageMagicByte
+    attributes = Compression.None
+    key = null
+    value = msg }
+
+/// create a simple msg and format it accordingly
+/// does not compress the msg.
+let create_single_msg (msg : byte[]) : MessageSet =
+  { offset = 0L
+    messages = [ create_simple_msg msg ]}
 
 let serialize_message (stream : MemoryStream) msg = 
   stream.write_int<Crc32> msg.crc

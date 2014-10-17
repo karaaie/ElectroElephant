@@ -75,9 +75,15 @@ let private create_broker_actor state =
     messageHandler (fun actor ->
       let rec loop (state : BrokerActorState) = async {
         let! msg = actor.Receive()
+
+        let tcp =
+          match state.tcp_client with
+          | Some t -> t
+          | None -> new TcpClient(state.hostname, state.port)
+
         match msg.Message with
           | Publish(msg, topic, partition) ->
-            ()
+            Api.
           | FetchRequest
           | OffsetRequest
           | ConsumerMetadataRequest
@@ -129,7 +135,6 @@ let private create_client (metadata : MetadataResponse)  : ClientState =
         client_state.topic_partition_to_broker_id.Add(topic_partition, node_id)
       )
     )
-
   client_state
 
 type private MasterActorActions =
@@ -159,6 +164,7 @@ let private master_actor () =
             return! loop (Some s)
           | Publish(msg, topic, partition) ->
             if state.IsNone then
+              Logger.error logger "tried to publish msg to master actor with out bootstrapping it"
               failwith "you must bootstrap the master actor before publishing messages"
             else
               let broker_id = state.Value.topic_partition_to_broker_id.[{topic = topic ; partition = partition}]

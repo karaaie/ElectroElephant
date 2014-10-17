@@ -2,6 +2,8 @@
 
 open ElectroElephant.Common
 open ElectroElephant.Message
+open ElectroElephant.StreamHelpers
+open System.IO
 
 [<StructuralEquality; StructuralComparison>]
 type PartitionData = 
@@ -44,8 +46,24 @@ type ProduceRequest =
     timeout : Timeout
     topic_data : TopicData list }
 
-open ElectroElephant.StreamHelpers
-open System.IO
+
+
+
+let create_produce_req msg_set topic partition =
+  let stream = new MemoryStream();
+  Message.serialize msg_set stream
+  let arr = stream.ToArray()
+
+  { required_acks = -1s
+    timeout = 5000
+    topic_data =
+      [ { topic_name = topic
+          partition_data =
+           [{ partition_id = partition
+              message_set_size = arr.Length
+              message_set = msg_set }]
+              }] }
+
 
 let private serialize_partition_data (stream : MemoryStream) partition = 
   stream.write_int<PartitionId> partition.partition_id

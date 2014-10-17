@@ -87,6 +87,10 @@ type CoordinatorId = int32
 
 type Metadata = string
 
+
+/// Magic Constant, for a magic world!
+let MessageMagicByte : MagicByte = 1y
+
 // The following are the numeric codes that 
 // the ApiKey in the request can take for each of the above request types.
 type ApiKeys = 

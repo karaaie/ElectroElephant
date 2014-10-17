@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common.fs" />
+    <Compile Include="Crc32.fs" />
     <Compile Include="StreamHelpers.fs" />
     <Compile Include="CompressionNew.fs" />
     <Compile Include="Message.fs" />
@@ -87,7 +88,6 @@
     <Compile Include="OffsetFetchRequest.fs" />
     <Compile Include="OffsetCommitRequest.fs" />
     <Compile Include="Request.fs" />
-    <Compile Include="Crc32.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="Compression.fs" />
     <None Include="Script.fsx" />
