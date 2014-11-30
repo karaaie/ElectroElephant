@@ -56,3 +56,5 @@ task :test do
     system exe, clr_command: true
   end
 end
+
+task :default => :build
