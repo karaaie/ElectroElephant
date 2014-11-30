@@ -3,21 +3,18 @@
 open ElectroElephant.Api
 open ElectroElephant.Common
 open ElectroElephant.MetadataResponse
-open FSharp.Actor
+open Cricket
+open Cricket.Actor
 open Logary
 open System.Collections.Generic
 open System.Net.Sockets
 
 let logger = Logging.getCurrentLogger()
 
-//Start and create the Actor System Host.
-ActorHost.Start()
+let system =
+  ActorHost.Start("ElectroElephant Actor System").SubscribeEvents(fun (ae : ActorEvent)->   
+    Logger.info logger (sprintf "%A" ae))
 
-let system = 
-  ActorHost.CreateSystem("Electro Elephant Actor System").SubscribeEvents (fun (ae : ActorEvent) ->
-     Logger.info logger (sprintf "%A" ae))
-
- 
 type Broker = 
   { /// hostname of a broker
     hostname : Hostname
@@ -40,7 +37,7 @@ type TopicPartition =
 type ClientState =
   { topic_to_partition            : Dictionary<TopicName, PartitionId list>
     topic_partition_to_broker_id  : Dictionary<TopicPartition, NodeId>
-    broker_to_actor               : Dictionary<NodeId, FSharp.Actor.actorRef> }
+    broker_to_actor               : Dictionary<NodeId, Cricket.ActorRef> }
 
 type SendAction =
   | Bootstrap
@@ -72,9 +69,9 @@ let private create_broker_actor state =
   let actor_name = (sprintf "Broker Actor (node id = %d)" state.node_id)
   actor {
     name actor_name
-    messageHandler (fun actor ->
-      let rec loop (state : BrokerActorState) = async {
-        let! msg = actor.Receive()
+    body (
+      let rec loop (state : BrokerActorState) = messageHandler {
+        let! msg = Message.receive()
 
         let tcp =
           match state.tcp_client with
@@ -89,17 +86,17 @@ let private create_broker_actor state =
           | OffsetFetchRequest
           | OffsetCommitRequest
           | _ -> failwith "got something strange!"
-      }
+        }
       loop state
-    )
-  } |> Actor.spawn actor_name
+      )
+  } |> Actor.spawn
 
 
 let private create_client (metadata : MetadataResponse)  : ClientState =
   let client_state = 
     { topic_to_partition = new Dictionary<TopicName, PartitionId list>()
       topic_partition_to_broker_id = new Dictionary<TopicPartition, NodeId> ()
-      broker_to_actor = new Dictionary<NodeId, FSharp.Actor.actorRef> () }
+      broker_to_actor = new Dictionary<NodeId, Cricket.ActorRef> () }
 
   /// create all broker actors
   metadata.brokers 
@@ -147,33 +144,32 @@ let private master_actor () =
   let actor_name = "Master Actor"
   actor {
     name actor_name
-    messageHandler (fun actor ->
-      let rec loop (state : ClientState option) =
-        async {
-          let! msg = actor.Receive()
-          match msg.Message with
-          | Bootstrap(conf, clb) -> 
-            let head = conf.brokers |> List.head
-            let! resp = do_metadata_request head.hostname head.port conf.topics
-            let s = create_client resp
+    body (
+      let rec loop (state : ClientState option) = messageHandler {
+        let! msg = Message.receive()
+        match msg.Message with
+        | Bootstrap(conf, clb) -> 
+          let head = conf.brokers |> List.head
+          let! resp = do_metadata_request head.hostname head.port conf.topics
+          let s = create_client resp
 
-            match clb with
-            | Some c -> c s
-            | None -> ()
-            return! loop (Some s)
-          | Publish(msg, topic, partition) ->
-            if state.IsNone then
-              Logger.error logger "tried to publish msg to master actor with out bootstrapping it"
-              failwith "you must bootstrap the master actor before publishing messages"
-            else
-              let broker_id = state.Value.topic_partition_to_broker_id.[{topic = topic ; partition = partition}]
-              let actor = state.Value.broker_to_actor.[broker_id]
-              actor <-- Publish(msg, topic, partition)
-          | _ -> failwith "got something strange!"
-        }
+          match clb with
+          | Some c -> c s
+          | None -> ()
+          return! loop (Some s)
+        | Publish(msg, topic, partition) ->
+          if state.IsNone then
+            Logger.error logger "tried to publish msg to master actor with out bootstrapping it"
+            failwith "you must bootstrap the master actor before publishing messages"
+          else
+            let broker_id = state.Value.topic_partition_to_broker_id.[{topic = topic ; partition = partition}]
+            let actor = state.Value.broker_to_actor.[broker_id]
+            actor <-- Publish(msg, topic, partition)
+        | _ -> failwith "got something strange!"
+      }
       loop None
     )
-  } |> Actor.spawn actor_name
+  } |> Actor.spawn
 
 /// <summary>
 ///  This method starts and inits ElectroElephant. 
