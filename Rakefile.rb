@@ -4,6 +4,7 @@ require 'albacore/tasks/versionizer'
 
 Albacore::Tasks::Versionizer.new :versioning
 
+Configuration = 'RELEASE'
 
 desc 'restore all nugets as per the packages.config files'
 nugets_restore :restore do |p|
