@@ -114,13 +114,13 @@ let private send_request<'RequestType> (req_t : RequestTypes) (socket : Socket) 
 //let do_offset = ()
 
 
-let create_produce_req msg topic partition : ProduceRequest =
+//let create_produce_req msg topic partition : ProduceRequest =
   
 
-let do_produce_request tcp_client msg topic  =
-  async {
-    
-  }
+//let do_produce_request tcp_client msg topic  =
+//  async {
+//    
+//  }
 
 /// <summary>
 ///   wraps the metaresponse callback so the api will be a bit cleaner.

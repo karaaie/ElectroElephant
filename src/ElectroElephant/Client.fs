@@ -82,8 +82,7 @@ let private create_broker_actor state =
           | None -> new TcpClient(state.hostname, state.port)
 
         match msg.Message with
-          | Publish(msg, topic, partition) ->
-            Api.
+          | Publish(msg, topic, partition) -> ()
           | FetchRequest
           | OffsetRequest
           | ConsumerMetadataRequest
