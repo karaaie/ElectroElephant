@@ -1,5 +1,6 @@
 require 'bundler/setup'
 require 'albacore'
+require 'albacore/tasks/versionizer'
 
 Albacore::Tasks::Versionizer.new :versioning
 
