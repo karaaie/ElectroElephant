@@ -35,12 +35,16 @@
       <HintPath>..\packages\Cricket.0.0.9-alpha\lib\Cricket.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FSharp.Actor">
+      <HintPath>..\packages\FSharp.Actor-logary.2.0.0-beta2\lib\net40\FSharp.Actor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="FsPickler">
       <HintPath>..\packages\FsPickler.0.9.11\lib\net45\FsPickler.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Logary">
-      <HintPath>..\packages\Intelliplan.Logary.2.0.0-alpha6\lib\net40\Logary.dll</HintPath>
+      <HintPath>..\packages\Intelliplan.Logary.2.0.0-beta2\lib\net40\Logary.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
